@@ -8,10 +8,11 @@ class InfixExpressionTest extends Module {
         val ready = Output(Bool()) 
     })
 
+    val state = RegInit(15.U(4.W))
+
     val x = Reg(UInt(32.W))
     val y = Reg(UInt(32.W))
     val b = Reg(Bool())
-    val state = RegInit(Fill(4, 1.B))
 
     switch(state) {
         is(15.U) {
@@ -68,6 +69,9 @@ class InfixExpressionTest extends Module {
         is(12.U) {
             b := x > y
             state := 13.U
+        }
+        is(13.U) {
+            state := 15.U
         }
 
     }

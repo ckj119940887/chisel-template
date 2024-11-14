@@ -10,11 +10,12 @@ class returnSum extends Module {
         val out_returnSum = Output(UInt(32.W)) 
     })
 
+    val state = RegInit(31.U(5.W))
+
     val i = Reg(UInt(32.W))
     val sum = Reg(UInt(32.W))
-    val x = Reg(Vec( 10, UInt(32.W)))
+    val x = Reg(Vec( 10,  UInt(32.W)))
     io.out_returnSum := sum
-    val state = RegInit(Fill(5, 1.B))
 
     switch(state) {
         is(31.U) {
@@ -78,6 +79,9 @@ class returnSum extends Module {
         is(14.U) {
             i := i  + 1.U
             state := 12.U
+        }
+        is(15.U) {
+            state := 31.U
         }
 
     }

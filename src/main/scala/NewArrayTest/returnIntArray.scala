@@ -14,11 +14,12 @@ class returnIntArray extends Module {
         val dout_returnIntArray = Output(UInt(32.W)) 
     })
 
+    val state = RegInit(7.U(3.W))
+
     val i = Reg(UInt(32.W))
-    val x = Reg(Vec( 10, UInt(32.W)))
+    val x = Reg(Vec( 10,  UInt(32.W)))
     x(io.addr_returnIntArray) := Mux(io.we_returnIntArray, io.din_returnIntArray, x(io.addr_returnIntArray)) 
-    io.dout_returnIntArray := Mux(!io.we_returnIntArray, x(io.addr_returnIntArray), 0.U)
-    val state = RegInit(Fill(3, 1.B))
+    io.dout_returnIntArray := Mux(!io.we_returnIntArray, x(io.addr_returnIntArray), DontCare)
 
     switch(state) {
         is(7.U) {
@@ -44,6 +45,9 @@ class returnIntArray extends Module {
         is(3.U) {
             i := i  + 1.U
             state := 1.U
+        }
+        is(4.U) {
+            state := 7.U
         }
 
     }

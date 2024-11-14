@@ -30,7 +30,7 @@ class insertSort extends Module {
             state := 1.U
         }
         is(1.U) {
-            state := Mux(i <  10.U, 1.U, 9.U)
+            state := Mux(i <  10.U, 2.U, 10.U)
         }
         is(2.U) {
             key := array(i)
@@ -41,7 +41,7 @@ class insertSort extends Module {
             state := 4.U
         }
         is(4.U) {
-            state := Mux(j >=  0.U && array(j) > key, 5.U, 7.U)
+            state := Mux(j >  0.U && array(j) > key, 5.U, 7.U)
         }
         is(5.U) {
             array(j +  1.U) := array(j)
@@ -52,17 +52,30 @@ class insertSort extends Module {
             state := 4.U
         }
         is(7.U) {
-            array(j +  1.U) := key
+          when (j ===  0.U && array(j) > key) {
+                        array(j +  1.U) := array(j)
+
+          }
+          .otherwise {
+                        array(j +  1.U) := key
+          }
             state := 8.U
         }
         is(8.U) {
-            i := i  + 1.U
-            state := 0.U
+          when (j ===  0.U && array(j) > key) {
+                        array(j) := key
+
+          }
+            state := 9.U
         }
         is(9.U) {
+            i := i  + 1.U
+            state := 1.U
+        }
+        is(10.U) {
             state := 15.U
         }
 
     }
-    io.ready := state === 9.U
+    io.ready := state === 10.U
 }

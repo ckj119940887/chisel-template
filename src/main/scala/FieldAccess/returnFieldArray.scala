@@ -13,11 +13,12 @@ class returnFieldArray extends Module {
         val dout_returnFieldArray = Output(new FieldAccessBar) 
     })
 
+    val state = RegInit(7.U(3.W))
+
     val i = Reg(UInt(32.W))
     val f = Reg(Vec( 5, new FieldAccessBar))
     f(io.addr_returnFieldArray) := Mux(io.we_returnFieldArray, io.din_returnFieldArray, f(io.addr_returnFieldArray)) 
     io.dout_returnFieldArray := Mux(!io.we_returnFieldArray, f(io.addr_returnFieldArray), DontCare)
-    val state = RegInit(Fill(3, 1.B))
 
     switch(state) {
         is(7.U) {
@@ -41,6 +42,9 @@ class returnFieldArray extends Module {
         is(4.U) {
             i := i  + 1.U
             state := 1.U
+        }
+        is(5.U) {
+            state := 7.U
         }
 
     }

@@ -8,8 +8,9 @@ class IfStatementTest extends Module {
         val ready = Output(Bool()) 
     })
 
+    val state = RegInit(3.U(2.W))
+
     val x = Reg(UInt(32.W))
-    val state = RegInit(Fill(2, 1.B))
 
     switch(state) {
         is(3.U) {
@@ -24,6 +25,9 @@ class IfStatementTest extends Module {
                         x :=  0.U
           }
             state := 1.U
+        }
+        is(1.U) {
+            state := 3.U
         }
 
     }

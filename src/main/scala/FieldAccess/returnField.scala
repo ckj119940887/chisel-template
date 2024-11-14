@@ -11,9 +11,10 @@ class returnField extends Module {
         val out_returnField = Output(new FieldAccessBar) 
     })
 
+    val state = RegInit(3.U(2.W))
+
     val f = Reg(new FieldAccessBar())
     io.out_returnField := f
-    val state = RegInit(Fill(2, 1.B))
 
     switch(state) {
         is(3.U) {
@@ -26,6 +27,9 @@ class returnField extends Module {
         is(1.U) {
             f.i := io.a
             state := 2.U
+        }
+        is(2.U) {
+            state := 7.U
         }
 
     }
