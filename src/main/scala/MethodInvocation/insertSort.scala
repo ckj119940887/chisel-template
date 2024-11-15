@@ -4,22 +4,22 @@ import chisel3.util._
 
 class insertSort extends Module {
      val io = IO(new Bundle {
+        val we_array = Input(Bool()) 
+        val addr_array = Input(UInt(5.W)) 
+        val din_array = Input(UInt(32.W)) 
         val valid = Input(Bool()) 
-        val we_insertSort = Input(Bool()) 
-        val din_insertSort = Input(UInt(32.W)) 
-        val addr_insertSort = Input(UInt(4.W)) 
+        val dout_array = Output(UInt(32.W)) 
         val ready = Output(Bool()) 
-        val dout_insertSort = Output(UInt(32.W)) 
     })
 
     val state = RegInit(15.U(4.W))
 
+    val array = Reg(Vec(20,  UInt(32.W)))
+    array(io.addr_array) := Mux(io.we_array, io.din_array, array(io.addr_array)) 
+    io.dout_array := Mux(!io.we_array, array(io.addr_array), DontCare)
     val i = Reg(UInt(32.W))
     val key = Reg(UInt(32.W))
     val j = Reg(UInt(32.W))
-    val array = Reg(Vec( 10,  UInt(32.W)))
-    array(io.addr_insertSort) := Mux(io.we_insertSort, io.din_insertSort, array(io.addr_insertSort)) 
-    io.dout_insertSort := Mux(!io.we_insertSort, array(io.addr_insertSort), DontCare)
 
     switch(state) {
         is(15.U) {

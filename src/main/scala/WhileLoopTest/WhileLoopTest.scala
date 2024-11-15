@@ -20,28 +20,34 @@ class WhileLoopTest extends Module {
         }
         is(0.U) {
             b :=  true.B
-            x :=  1.U
-            y :=  2.U
             state := 1.U
         }
         is(1.U) {
-            state := Mux(b, 2.U, 4.U)
+            x :=  1.U
+            state := 2.U
         }
         is(2.U) {
-            x := x + y
+            y :=  2.U
             state := 3.U
         }
         is(3.U) {
+            state := Mux(b, 4.U, 6.U)
+        }
+        is(4.U) {
+            x := x + y
+            state := 5.U
+        }
+        is(5.U) {
           when (x >  10.U) {
                         b :=  false.B
 
           }
-            state := 1.U
+            state := 3.U
         }
-        is(4.U) {
-            state := 7.U
+        is(6.U) {
+            state := 15.U
         }
 
     }
-    io.ready := state === 4.U
+    io.ready := state === 6.U
 }

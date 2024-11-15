@@ -20,28 +20,31 @@ class ForLoopTest extends Module {
         }
         is(0.U) {
             i :=  0.U
-            step :=  0.U
             state := 1.U
         }
         is(1.U) {
-            state := Mux(true.B, 2.U, 5.U)
+            step :=  0.U
+            state := 2.U
         }
         is(2.U) {
-            array(i) := i + step
-            state := 3.U
+            state := Mux(i <  10.U, 3.U, 6.U)
         }
         is(3.U) {
-            i := i  + 1.U
+            array(i) := i + step
             state := 4.U
         }
         is(4.U) {
-            step := step  + 1.U
-            state := 1.U
+            i := i  + 1.U
+            state := 5.U
         }
         is(5.U) {
-            state := 7.U
+            step := step  + 1.U
+            state := 2.U
+        }
+        is(6.U) {
+            state := 15.U
         }
 
     }
-    io.ready := state === 5.U
+    io.ready := state === 6.U
 }
