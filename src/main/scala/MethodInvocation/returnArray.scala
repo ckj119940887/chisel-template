@@ -5,46 +5,42 @@ import chisel3.util._
 class returnArray extends Module {
      val io = IO(new Bundle {
         val a = Input(new FieldAccessFoo) 
-        val b = Input(UInt(32.W)) 
+        val b = Input(SInt(32.W)) 
         val valid = Input(Bool()) 
         val ready = Output(Bool()) 
-        val addr_returnArray = Input(UInt(4.W))
-        val din_returnArray = Input(new FieldAccessFoo)
-        val dout_returnArray = Output(new FieldAccessFoo)
-        val we_returnArray = Input(Bool())
+        val out_returnArray = Output(Vec(20, new FieldAccessFoo)) 
     })
 
     val state = RegInit(7.U(3.W))
 
-    val i = Reg(UInt(32.W))
-    val x = Reg(Vec( 10, new FieldAccessFoo))
-    val __m_addMulMod = Module(new addMulMod())
-    __m_addMulMod.io.a := 0.U
-    __m_addMulMod.io.b := 0.U
-    __m_addMulMod.io.valid := 0.U
-    x(io.addr_returnArray) := Mux(io.we_returnArray, io.din_returnArray, x(io.addr_returnArray)) 
-    io.dout_returnArray := Mux(!io.we_returnArray, x(io.addr_returnArray), DontCare)
+    val i = Reg(SInt(32.W))
+    val x = Reg(Vec(20, new FieldAccessFoo))
+    val __m_addMulMod_0 = Module(new addMulMod())
+    __m_addMulMod_0.io.a := DontCare
+    __m_addMulMod_0.io.b := DontCare
+    __m_addMulMod_0.io.valid := false.B
+    x <> io.out_returnArray
 
     switch(state) {
         is(7.U) {
             state := Mux(io.valid, 0.U, state)
         }
         is(0.U) {
-            i :=  0.U
+            i :=  0.S
             state := 1.U
         }
         is(1.U) {
-            state := Mux(i <  10.U, 2.U, 4.U)
+            state := Mux(i <  10.S, 2.U, 4.U)
         }
         is(2.U) {
-            x(i).i := __m_addMulMod.io.out_addMulMod
-            __m_addMulMod.io.valid := Mux(__m_addMulMod.io.ready, RegNext(false.B), true.B)
-            __m_addMulMod.io.a := io.a.i
-            __m_addMulMod.io.b := io.b + i
-            state := Mux(__m_addMulMod.io.ready, 3.U, state)
+            x((i).asUInt()).i := __m_addMulMod_0.io.out_addMulMod
+            __m_addMulMod_0.io.valid := Mux(__m_addMulMod_0.io.ready, RegNext(false.B), true.B)
+            __m_addMulMod_0.io.a := io.a.i
+            __m_addMulMod_0.io.b := io.b + i
+            state := Mux(__m_addMulMod_0.io.ready, 3.U, state)
         }
         is(3.U) {
-            i := i  + 1.U
+            i := i  + 1.S
             state := 1.U
         }
         is(4.U) {

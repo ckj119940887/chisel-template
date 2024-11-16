@@ -9,79 +9,54 @@ import scala.util.Random
 class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
   "InfixExpressionTestBench" should "and" in {
     test(new and).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
-      dut.io.valid.poke(1.U)
+      val rand = new Random()
 
-      dut.io.x.poke(true.B)
-      dut.io.y.poke(true.B)
-      dut.clock.step()
-      dut.io.out_and.expect(true.B)
+      dut.io.valid.poke(true.B)
 
-      dut.io.x.poke(false.B)
-      dut.io.y.poke(false.B)
-      dut.clock.step()
-      dut.io.out_and.expect(false.B)
+      for(i <- 0 until 100) {
+        val inX = rand.nextInt(30000).S
+        val inY = rand.nextInt(30000).S
+        dut.io.x.poke(inX)
+        dut.io.y.poke(inY)
+        dut.clock.step()
+        dut.io.out_and.expect((inX.litValue & inY.litValue).S)
+      }
 
-      dut.io.x.poke(false.B)
-      dut.io.y.poke(true.B)
-      dut.clock.step()
-      dut.io.out_and.expect(false.B)
-
-      dut.io.x.poke(true.B)
-      dut.io.y.poke(false.B)
-      dut.clock.step()
-      dut.io.out_and.expect(false.B)
     }
   }
 
   "InfixExpressionTestBench" should "or" in {
     test(new or).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
-      dut.io.valid.poke(1.U)
+      val rand = new Random()
 
-      dut.io.x.poke(true.B)
-      dut.io.y.poke(true.B)
-      dut.clock.step()
-      dut.io.out_or.expect(true.B)
+      dut.io.valid.poke(true.B)
 
-      dut.io.x.poke(false.B)
-      dut.io.y.poke(false.B)
-      dut.clock.step()
-      dut.io.out_or.expect(false.B)
-
-      dut.io.x.poke(false.B)
-      dut.io.y.poke(true.B)
-      dut.clock.step()
-      dut.io.out_or.expect(true.B)
-
-      dut.io.x.poke(true.B)
-      dut.io.y.poke(false.B)
-      dut.clock.step()
-      dut.io.out_or.expect(true.B)
+      for(i <- 0 until 100) {
+        val inX = rand.nextInt(30000).S
+        val inY = rand.nextInt(30000).S
+        dut.io.x.poke(inX)
+        dut.io.y.poke(inY)
+        dut.clock.step()
+        dut.io.out_or.expect((inX.litValue | inY.litValue).S)
+      }
     }
   }
 
   "InfixExpressionTestBench" should "xor" in {
     test(new xor).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
-      dut.io.valid.poke(1.U)
+      val rand = new Random()
 
-      dut.io.x.poke(true.B)
-      dut.io.y.poke(true.B)
-      dut.clock.step()
-      dut.io.out_xor.expect(false.B)
+      dut.io.valid.poke(true.B)
 
-      dut.io.x.poke(false.B)
-      dut.io.y.poke(false.B)
-      dut.clock.step()
-      dut.io.out_xor.expect(false.B)
+      for(i <- 0 until 100) {
+        val inX = rand.nextInt(30000).S
+        val inY = rand.nextInt(30000).S
+        dut.io.x.poke(inX)
+        dut.io.y.poke(inY)
+        dut.clock.step()
+        dut.io.out_xor.expect((inX.litValue ^ inY.litValue).S)
+      }
 
-      dut.io.x.poke(false.B)
-      dut.io.y.poke(true.B)
-      dut.clock.step()
-      dut.io.out_xor.expect(true.B)
-
-      dut.io.x.poke(true.B)
-      dut.io.y.poke(false.B)
-      dut.clock.step()
-      dut.io.out_xor.expect(true.B)
     }
   }
 
@@ -89,14 +64,14 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
     test(new add).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       val rand = new Random()
 
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
       for(i <- 0 until 100) {
-        val inX = rand.nextInt(30000).U
-        val inY = rand.nextInt(30000).U
+        val inX = rand.nextInt(30000).S
+        val inY = rand.nextInt(30000).S
         dut.io.x.poke(inX)
         dut.io.y.poke(inY)
         dut.clock.step()
-        dut.io.out_add.expect((inX.litValue + inY.litValue).U)
+        dut.io.out_add.expect((inX.litValue + inY.litValue).S)
       }
     }
   }
@@ -105,14 +80,14 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
     test(new mul).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       val rand = new Random()
 
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
       for(i <- 0 until 100) {
-        val inX = rand.nextInt(128).U
-        val inY = rand.nextInt(128).U
+        val inX = rand.nextInt(128).S
+        val inY = rand.nextInt(128).S
         dut.io.x.poke(inX)
         dut.io.y.poke(inY)
         dut.clock.step()
-        dut.io.out_mul.expect((inX.litValue * inY.litValue).U)
+        dut.io.out_mul.expect((inX.litValue * inY.litValue).S)
       }
     }
   }
@@ -126,14 +101,14 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
     test(new mod).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       val rand = new Random()
 
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
       for(i <- 0 until 100) {
-        val inX = randomInRange(1, 128).U
-        val inY = randomInRange(1, 128).U
+        val inX = randomInRange(1, 128).S
+        val inY = randomInRange(1, 128).S
         dut.io.x.poke(inX)
         dut.io.y.poke(inY)
         dut.clock.step()
-        dut.io.out_mod.expect((inX.litValue % inY.litValue).U)
+        dut.io.out_mod.expect((inX.litValue % inY.litValue).S)
       }
     }
   }
@@ -142,14 +117,14 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
     test(new div).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       val rand = new Random()
 
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
       for(i <- 0 until 100) {
-        val inX = rand.nextInt(30000).U
-        val inY = rand.nextInt(30000).U
+        val inX = rand.nextInt(30000).S
+        val inY = rand.nextInt(30000).S
         dut.io.x.poke(inX)
         dut.io.y.poke(inY)
         dut.clock.step()
-        dut.io.out_div.expect((inX.litValue / inY.litValue).U)
+        dut.io.out_div.expect((inX.litValue / inY.litValue).S)
       }
     }
   }
@@ -158,10 +133,10 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
     test(new equal).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       val rand = new Random()
 
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
       for(i <- 0 until 100) {
-        val inX = rand.nextInt(30000).U
-        val inY = rand.nextInt(30000).U
+        val inX = rand.nextInt(30000).S
+        val inY = rand.nextInt(30000).S
         dut.io.x.poke(inX)
         dut.io.y.poke(inY)
         dut.clock.step()
@@ -175,10 +150,10 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
     test(new greater).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       val rand = new Random()
 
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
       for(i <- 0 until 100) {
-        val inX = rand.nextInt(30000).U
-        val inY = rand.nextInt(30000).U
+        val inX = rand.nextInt(30000).S
+        val inY = rand.nextInt(30000).S
         dut.io.x.poke(inX)
         dut.io.y.poke(inY)
         dut.clock.step()
@@ -192,10 +167,10 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
     test(new greaterEqual).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       val rand = new Random()
 
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
       for(i <- 0 until 100) {
-        val inX = rand.nextInt(30000).U
-        val inY = rand.nextInt(30000).U
+        val inX = rand.nextInt(30000).S
+        val inY = rand.nextInt(30000).S
         dut.io.x.poke(inX)
         dut.io.y.poke(inY)
         dut.clock.step()
@@ -209,10 +184,10 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
     test(new less).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       val rand = new Random()
 
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
       for(i <- 0 until 100) {
-        val inX = rand.nextInt(30000).U
-        val inY = rand.nextInt(30000).U
+        val inX = rand.nextInt(30000).S
+        val inY = rand.nextInt(30000).S
         dut.io.x.poke(inX)
         dut.io.y.poke(inY)
         dut.clock.step()
@@ -226,10 +201,10 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
     test(new lessEqual).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       val rand = new Random()
 
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
       for(i <- 0 until 100) {
-        val inX = rand.nextInt(30000).U
-        val inY = rand.nextInt(30000).U
+        val inX = rand.nextInt(30000).S
+        val inY = rand.nextInt(30000).S
         dut.io.x.poke(inX)
         dut.io.y.poke(inY)
         dut.clock.step()
@@ -241,7 +216,7 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
 
   "InfixExpressionTestBench" should "logicalAnd" in {
     test(new logicalAnd).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
 
       dut.io.x.poke(true.B)
       dut.io.y.poke(true.B)
@@ -268,7 +243,7 @@ class InfixExpressionTestBench extends AnyFlatSpec with ChiselScalatestTester {
 
   "InfixExpressionTestBench" should "logicalOr" in {
     test(new logicalOr).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
-      dut.io.valid.poke(1.U)
+      dut.io.valid.poke(true.B)
 
       dut.io.x.poke(true.B)
       dut.io.y.poke(true.B)

@@ -4,7 +4,7 @@ import chisel3.util._
 
 class returnField extends Module {
      val io = IO(new Bundle {
-        val a = Input(UInt(32.W)) 
+        val a = Input(SInt(32.W)) 
         val b = Input(new FieldAccessFoo) 
         val valid = Input(Bool()) 
         val ready = Output(Bool()) 

@@ -4,8 +4,8 @@ import chisel3.util._
 
 class greater extends Module {
      val io = IO(new Bundle {
-        val x = Input(UInt(32.W)) 
-        val y = Input(UInt(32.W)) 
+        val x = Input(SInt(32.W)) 
+        val y = Input(SInt(32.W)) 
         val valid = Input(Bool()) 
         val ready = Output(Bool()) 
         val out_greater = Output(Bool()) 

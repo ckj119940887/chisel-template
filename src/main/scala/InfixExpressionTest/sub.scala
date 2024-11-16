@@ -4,11 +4,11 @@ import chisel3.util._
 
 class sub extends Module {
      val io = IO(new Bundle {
-        val x = Input(UInt(32.W)) 
-        val y = Input(UInt(32.W)) 
+        val x = Input(SInt(32.W)) 
+        val y = Input(SInt(32.W)) 
         val valid = Input(Bool()) 
         val ready = Output(Bool()) 
-        val out_sub = Output(UInt(32.W)) 
+        val out_sub = Output(SInt(32.W)) 
     })
 
     io.out_sub := io.x - io.y

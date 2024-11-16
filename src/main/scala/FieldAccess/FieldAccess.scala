@@ -10,7 +10,7 @@ class FieldAccess extends Module {
 
     val state = RegInit(15.U(4.W))
 
-    val i = Reg(UInt(32.W))
+    val i = Reg(SInt(32.W))
     val f = Reg(new FieldAccessFoo())
     val b = Reg(new FieldAccessBar())
 
@@ -19,7 +19,7 @@ class FieldAccess extends Module {
             state := Mux(io.valid, 0.U, state)
         }
         is(0.U) {
-            f.i :=  0.U
+            f.i :=  0.S
             state := 1.U
         }
         is(1.U) {
@@ -27,7 +27,7 @@ class FieldAccess extends Module {
             state := 2.U
         }
         is(2.U) {
-            b.i :=  1.U
+            b.i :=  1.S
             state := 3.U
         }
         is(3.U) {
@@ -39,7 +39,7 @@ class FieldAccess extends Module {
             state := 5.U
         }
         is(5.U) {
-            b.f.i :=  2.U
+            b.f.i :=  2.S
             state := 6.U
         }
         is(6.U) {

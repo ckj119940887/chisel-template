@@ -10,24 +10,24 @@ class NewArrayTest extends Module {
 
     val state = RegInit(7.U(3.W))
 
-    val i = Reg(UInt(32.W))
-    val a = RegInit(VecInit(Seq(1.U, 2.U, 3.U)))
-    val b = Reg(Vec( 3,  UInt(32.W)))
+    val i = Reg(SInt(32.W))
+    val a = RegInit(VecInit(Seq(1.S, 2.S, 3.S)))
+    val b = Reg(Vec(20,  SInt(32.W)))
 
     switch(state) {
         is(7.U) {
             state := Mux(io.valid, 0.U, state)
         }
         is(0.U) {
-            i :=  0.U
+            i :=  0.S
             state := 1.U
         }
         is(1.U) {
-            b(i) := a(a(i))
+            b((i).asUInt()) := a((a((i).asUInt())).asUInt())
             state := 2.U
         }
         is(2.U) {
-            b(a(i) * i) := a(b(a(i)))
+            b((a((i).asUInt()) * i).asUInt()) := a((b((a((i).asUInt())).asUInt())).asUInt())
             state := 3.U
         }
         is(3.U) {
