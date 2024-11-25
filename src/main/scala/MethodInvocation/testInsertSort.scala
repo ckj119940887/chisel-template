@@ -6,13 +6,15 @@ class testInsertSort extends Module {
      val io = IO(new Bundle {
         val valid = Input(Bool()) 
         val ready = Output(Bool()) 
-        val out_testInsertSort = Output(Vec(20, SInt(32.W))) 
+        val out_testInsertSort = Output(Vec(80, SInt(32.W))) 
     })
 
     val state = RegInit(7.U(3.W))
-
+    when(reset.asBool()) {
+        state := 7.U
+    }
     val i = Reg(SInt(32.W))
-    val test = Reg(Vec(20,  SInt(32.W)))
+    val test = Reg(Vec(80,  SInt(32.W)))
     val __m_insertSort_0 = Module(new insertSort())
     __m_insertSort_0.io.array := DontCare
     __m_insertSort_0.io.valid := false.B
@@ -23,14 +25,14 @@ class testInsertSort extends Module {
             state := Mux(io.valid, 0.U, state)
         }
         is(0.U) {
-            i :=  0.S
+            i :=  0.S(32.W)
             state := 1.U
         }
         is(1.U) {
-            state := Mux(i <  10.S, 2.U, 4.U)
+            state := Mux(i <  10.S(32.W), 2.U, 4.U)
         }
         is(2.U) {
-            test((i).asUInt()) :=  10.S - i
+            test((i).asUInt()) :=  10.S(32.W) - i
             state := 3.U
         }
         is(3.U) {

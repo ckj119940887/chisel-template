@@ -9,7 +9,9 @@ class MethodInvocation extends Module {
     })
 
     val state = RegInit(3.U(2.W))
-
+    when(reset.asBool()) {
+        state := 3.U
+    }
     val y = Reg(SInt(32.W))
     val __m_addMulMod_0 = Module(new addMulMod())
     __m_addMulMod_0.io.a := DontCare
@@ -23,8 +25,8 @@ class MethodInvocation extends Module {
         is(0.U) {
             y := __m_addMulMod_0.io.out_addMulMod
             __m_addMulMod_0.io.valid := Mux(__m_addMulMod_0.io.ready, RegNext(false.B), true.B)
-            __m_addMulMod_0.io.a :=  1.S
-            __m_addMulMod_0.io.b :=  2.S
+            __m_addMulMod_0.io.a :=  1.S(32.W)
+            __m_addMulMod_0.io.b :=  2.S(32.W)
             state := Mux(__m_addMulMod_0.io.ready, 1.U, state)
         }
         is(1.U) {

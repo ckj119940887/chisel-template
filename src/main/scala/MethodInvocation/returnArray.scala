@@ -8,13 +8,15 @@ class returnArray extends Module {
         val b = Input(SInt(32.W)) 
         val valid = Input(Bool()) 
         val ready = Output(Bool()) 
-        val out_returnArray = Output(Vec(20, new FieldAccessFoo)) 
+        val out_returnArray = Output(Vec(80, new FieldAccessFoo)) 
     })
 
     val state = RegInit(7.U(3.W))
-
+    when(reset.asBool()) {
+        state := 7.U
+    }
     val i = Reg(SInt(32.W))
-    val x = Reg(Vec(20, new FieldAccessFoo))
+    val x = Reg(Vec(80, new FieldAccessFoo))
     val __m_addMulMod_0 = Module(new addMulMod())
     __m_addMulMod_0.io.a := DontCare
     __m_addMulMod_0.io.b := DontCare
@@ -26,11 +28,11 @@ class returnArray extends Module {
             state := Mux(io.valid, 0.U, state)
         }
         is(0.U) {
-            i :=  0.S
+            i :=  0.S(32.W)
             state := 1.U
         }
         is(1.U) {
-            state := Mux(i <  10.S, 2.U, 4.U)
+            state := Mux(i <  10.S(32.W), 2.U, 4.U)
         }
         is(2.U) {
             x((i).asUInt()).i := __m_addMulMod_0.io.out_addMulMod

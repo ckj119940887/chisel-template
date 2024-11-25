@@ -12,7 +12,9 @@ class addMulMod extends Module {
     })
 
     val state = RegInit(7.U(3.W))
-
+    when(reset.asBool()) {
+        state := 7.U
+    }
     val x = Reg(SInt(32.W))
     io.out_addMulMod := x
 
@@ -25,11 +27,11 @@ class addMulMod extends Module {
             state := 1.U
         }
         is(1.U) {
-            x := x << ( 2.S).asUInt()
+            x := (x << ( 2.S(32.W)).asUInt()(4,0)).asSInt()
             state := 2.U
         }
         is(2.U) {
-            x := x %  10.S
+            x := x %  10.S(32.W)
             state := 3.U
         }
         is(3.U) {
