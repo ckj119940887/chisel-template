@@ -1,0 +1,110 @@
+circuit GeneralRegFileToBRAM :
+  module GeneralRegFileToBRAM :
+    input clock : Clock
+    input reset : UInt<1>
+    output io : { flip startAddr : UInt<11>, flip ready : UInt<1>, flip resultAddr : UInt<11>, valid : UInt<1>, bramClk : Clock, bramWe : UInt<1>, bramAddr : UInt<11>, bramWData : UInt<32>, flip bramRData : UInt<32>}
+
+    reg generalRegFiles : UInt<32>[10], clock with :
+      reset => (UInt<1>("h0"), generalRegFiles) @[GeneralRegFileToBRAM.scala 26:30]
+    reg stateReg : UInt<4>, clock with :
+      reset => (reset, UInt<4>("h0")) @[GeneralRegFileToBRAM.scala 28:27]
+    reg sum : UInt<32>, clock with :
+      reset => (reset, UInt<32>("h0")) @[GeneralRegFileToBRAM.scala 31:22]
+    io.bramClk <= clock @[GeneralRegFileToBRAM.scala 33:16]
+    node _io_bramWe_T = eq(stateReg, UInt<4>("h8")) @[GeneralRegFileToBRAM.scala 35:31]
+    node _io_bramWe_T_1 = mux(_io_bramWe_T, UInt<1>("h1"), UInt<1>("h0")) @[GeneralRegFileToBRAM.scala 35:21]
+    io.bramWe <= _io_bramWe_T_1 @[GeneralRegFileToBRAM.scala 35:15]
+    node _io_bramAddr_T = eq(stateReg, UInt<1>("h1")) @[GeneralRegFileToBRAM.scala 37:33]
+    node _io_bramAddr_T_1 = mux(_io_bramAddr_T, io.startAddr, UInt<1>("h0")) @[GeneralRegFileToBRAM.scala 37:23]
+    node _io_bramAddr_T_2 = eq(stateReg, UInt<2>("h2")) @[GeneralRegFileToBRAM.scala 38:33]
+    node _io_bramAddr_T_3 = add(io.startAddr, UInt<3>("h4")) @[GeneralRegFileToBRAM.scala 38:55]
+    node _io_bramAddr_T_4 = tail(_io_bramAddr_T_3, 1) @[GeneralRegFileToBRAM.scala 38:55]
+    node _io_bramAddr_T_5 = mux(_io_bramAddr_T_2, _io_bramAddr_T_4, UInt<1>("h0")) @[GeneralRegFileToBRAM.scala 38:23]
+    node _io_bramAddr_T_6 = or(_io_bramAddr_T_1, _io_bramAddr_T_5) @[GeneralRegFileToBRAM.scala 37:67]
+    node _io_bramAddr_T_7 = eq(stateReg, UInt<2>("h3")) @[GeneralRegFileToBRAM.scala 39:33]
+    node _io_bramAddr_T_8 = add(io.startAddr, UInt<4>("h8")) @[GeneralRegFileToBRAM.scala 39:55]
+    node _io_bramAddr_T_9 = tail(_io_bramAddr_T_8, 1) @[GeneralRegFileToBRAM.scala 39:55]
+    node _io_bramAddr_T_10 = mux(_io_bramAddr_T_7, _io_bramAddr_T_9, UInt<1>("h0")) @[GeneralRegFileToBRAM.scala 39:23]
+    node _io_bramAddr_T_11 = or(_io_bramAddr_T_6, _io_bramAddr_T_10) @[GeneralRegFileToBRAM.scala 38:67]
+    node _io_bramAddr_T_12 = eq(stateReg, UInt<3>("h4")) @[GeneralRegFileToBRAM.scala 40:33]
+    node _io_bramAddr_T_13 = add(io.startAddr, UInt<4>("hc")) @[GeneralRegFileToBRAM.scala 40:55]
+    node _io_bramAddr_T_14 = tail(_io_bramAddr_T_13, 1) @[GeneralRegFileToBRAM.scala 40:55]
+    node _io_bramAddr_T_15 = mux(_io_bramAddr_T_12, _io_bramAddr_T_14, UInt<1>("h0")) @[GeneralRegFileToBRAM.scala 40:23]
+    node _io_bramAddr_T_16 = or(_io_bramAddr_T_11, _io_bramAddr_T_15) @[GeneralRegFileToBRAM.scala 39:67]
+    node _io_bramAddr_T_17 = eq(stateReg, UInt<3>("h5")) @[GeneralRegFileToBRAM.scala 41:33]
+    node _io_bramAddr_T_18 = add(io.startAddr, UInt<5>("h10")) @[GeneralRegFileToBRAM.scala 41:55]
+    node _io_bramAddr_T_19 = tail(_io_bramAddr_T_18, 1) @[GeneralRegFileToBRAM.scala 41:55]
+    node _io_bramAddr_T_20 = mux(_io_bramAddr_T_17, _io_bramAddr_T_19, UInt<1>("h0")) @[GeneralRegFileToBRAM.scala 41:23]
+    node _io_bramAddr_T_21 = or(_io_bramAddr_T_16, _io_bramAddr_T_20) @[GeneralRegFileToBRAM.scala 40:68]
+    node _io_bramAddr_T_22 = eq(stateReg, UInt<4>("h8")) @[GeneralRegFileToBRAM.scala 42:33]
+    node _io_bramAddr_T_23 = mux(_io_bramAddr_T_22, io.resultAddr, UInt<1>("h0")) @[GeneralRegFileToBRAM.scala 42:23]
+    node _io_bramAddr_T_24 = or(_io_bramAddr_T_21, _io_bramAddr_T_23) @[GeneralRegFileToBRAM.scala 41:68]
+    io.bramAddr <= _io_bramAddr_T_24 @[GeneralRegFileToBRAM.scala 37:17]
+    node _io_bramWData_T = eq(stateReg, UInt<4>("h8")) @[GeneralRegFileToBRAM.scala 44:34]
+    node _io_bramWData_T_1 = mux(_io_bramWData_T, sum, UInt<1>("h0")) @[GeneralRegFileToBRAM.scala 44:24]
+    io.bramWData <= _io_bramWData_T_1 @[GeneralRegFileToBRAM.scala 44:18]
+    node _io_valid_T = eq(stateReg, UInt<4>("h9")) @[GeneralRegFileToBRAM.scala 46:30]
+    node _io_valid_T_1 = mux(_io_valid_T, UInt<1>("h1"), UInt<1>("h0")) @[GeneralRegFileToBRAM.scala 46:20]
+    io.valid <= _io_valid_T_1 @[GeneralRegFileToBRAM.scala 46:14]
+    node _T = eq(UInt<1>("h0"), stateReg) @[GeneralRegFileToBRAM.scala 48:22]
+    when _T : @[GeneralRegFileToBRAM.scala 48:22]
+      node _stateReg_T = mux(io.ready, UInt<1>("h1"), stateReg) @[GeneralRegFileToBRAM.scala 50:28]
+      stateReg <= _stateReg_T @[GeneralRegFileToBRAM.scala 50:22]
+    else :
+      node _T_1 = eq(UInt<1>("h1"), stateReg) @[GeneralRegFileToBRAM.scala 48:22]
+      when _T_1 : @[GeneralRegFileToBRAM.scala 48:22]
+        stateReg <= UInt<2>("h2") @[GeneralRegFileToBRAM.scala 53:22]
+      else :
+        node _T_2 = eq(UInt<2>("h2"), stateReg) @[GeneralRegFileToBRAM.scala 48:22]
+        when _T_2 : @[GeneralRegFileToBRAM.scala 48:22]
+          generalRegFiles[0] <= io.bramRData @[GeneralRegFileToBRAM.scala 57:32]
+          stateReg <= UInt<2>("h3") @[GeneralRegFileToBRAM.scala 59:22]
+        else :
+          node _T_3 = eq(UInt<2>("h3"), stateReg) @[GeneralRegFileToBRAM.scala 48:22]
+          when _T_3 : @[GeneralRegFileToBRAM.scala 48:22]
+            node _sum_T = add(sum, generalRegFiles[0]) @[GeneralRegFileToBRAM.scala 63:24]
+            node _sum_T_1 = tail(_sum_T, 1) @[GeneralRegFileToBRAM.scala 63:24]
+            sum <= _sum_T_1 @[GeneralRegFileToBRAM.scala 63:17]
+            generalRegFiles[1] <= io.bramRData @[GeneralRegFileToBRAM.scala 65:32]
+            stateReg <= UInt<3>("h4") @[GeneralRegFileToBRAM.scala 67:22]
+          else :
+            node _T_4 = eq(UInt<3>("h4"), stateReg) @[GeneralRegFileToBRAM.scala 48:22]
+            when _T_4 : @[GeneralRegFileToBRAM.scala 48:22]
+              node _sum_T_2 = add(sum, generalRegFiles[1]) @[GeneralRegFileToBRAM.scala 71:24]
+              node _sum_T_3 = tail(_sum_T_2, 1) @[GeneralRegFileToBRAM.scala 71:24]
+              sum <= _sum_T_3 @[GeneralRegFileToBRAM.scala 71:17]
+              generalRegFiles[2] <= io.bramRData @[GeneralRegFileToBRAM.scala 73:32]
+              stateReg <= UInt<3>("h5") @[GeneralRegFileToBRAM.scala 75:22]
+            else :
+              node _T_5 = eq(UInt<3>("h5"), stateReg) @[GeneralRegFileToBRAM.scala 48:22]
+              when _T_5 : @[GeneralRegFileToBRAM.scala 48:22]
+                node _sum_T_4 = add(sum, generalRegFiles[2]) @[GeneralRegFileToBRAM.scala 79:24]
+                node _sum_T_5 = tail(_sum_T_4, 1) @[GeneralRegFileToBRAM.scala 79:24]
+                sum <= _sum_T_5 @[GeneralRegFileToBRAM.scala 79:17]
+                generalRegFiles[3] <= io.bramRData @[GeneralRegFileToBRAM.scala 81:32]
+                stateReg <= UInt<3>("h6") @[GeneralRegFileToBRAM.scala 83:22]
+              else :
+                node _T_6 = eq(UInt<3>("h6"), stateReg) @[GeneralRegFileToBRAM.scala 48:22]
+                when _T_6 : @[GeneralRegFileToBRAM.scala 48:22]
+                  node _sum_T_6 = add(sum, generalRegFiles[3]) @[GeneralRegFileToBRAM.scala 87:24]
+                  node _sum_T_7 = tail(_sum_T_6, 1) @[GeneralRegFileToBRAM.scala 87:24]
+                  sum <= _sum_T_7 @[GeneralRegFileToBRAM.scala 87:17]
+                  generalRegFiles[4] <= io.bramRData @[GeneralRegFileToBRAM.scala 89:32]
+                  stateReg <= UInt<3>("h7") @[GeneralRegFileToBRAM.scala 91:22]
+                else :
+                  node _T_7 = eq(UInt<3>("h7"), stateReg) @[GeneralRegFileToBRAM.scala 48:22]
+                  when _T_7 : @[GeneralRegFileToBRAM.scala 48:22]
+                    node _sum_T_8 = add(sum, generalRegFiles[4]) @[GeneralRegFileToBRAM.scala 95:24]
+                    node _sum_T_9 = tail(_sum_T_8, 1) @[GeneralRegFileToBRAM.scala 95:24]
+                    sum <= _sum_T_9 @[GeneralRegFileToBRAM.scala 95:17]
+                    stateReg <= UInt<4>("h8") @[GeneralRegFileToBRAM.scala 97:22]
+                  else :
+                    node _T_8 = eq(UInt<4>("h8"), stateReg) @[GeneralRegFileToBRAM.scala 48:22]
+                    when _T_8 : @[GeneralRegFileToBRAM.scala 48:22]
+                      stateReg <= UInt<4>("h9") @[GeneralRegFileToBRAM.scala 101:22]
+                    else :
+                      node _T_9 = eq(UInt<4>("h9"), stateReg) @[GeneralRegFileToBRAM.scala 48:22]
+                      when _T_9 : @[GeneralRegFileToBRAM.scala 48:22]
+                        skip
+
+
