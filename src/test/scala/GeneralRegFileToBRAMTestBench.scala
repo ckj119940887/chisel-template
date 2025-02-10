@@ -49,7 +49,7 @@ class GeneralRegFileToBRAMTestBench extends AnyFlatSpec with ChiselScalatestTest
       dut.clock.step()
 
       dut.io.startAddr.poke(0.U)
-      dut.io.ready.poke(true.B)
+      dut.io.valid.poke(true.B)
       dut.io.resultAddr.poke(20.U)
 
       for(i <- 0 until 10) {

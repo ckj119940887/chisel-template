@@ -7,10 +7,10 @@ import chisel3.experimental._
 class Top (val ADDR_WIDTH: Int = 11, val DATA_WIDTH: Int = 32) extends Module {
     val io = IO(new Bundle{
         val startAddr  = Input(UInt(ADDR_WIDTH.W))
-        val ready      = Input(Bool())
+        val valid = Input(Bool())
         val resultAddr = Input(UInt(ADDR_WIDTH.W))
 
-        val valid      = Output(Bool())
+        val ready = Output(Bool())
 
         val topAddr = Input(UInt(ADDR_WIDTH.W))  
         val topDin  = Input(UInt(DATA_WIDTH.W))      
@@ -25,9 +25,9 @@ class Top (val ADDR_WIDTH: Int = 11, val DATA_WIDTH: Int = 32) extends Module {
                                                           NUM_STATES = 10)) 
 
     regFileToBRAM.io.startAddr := io.startAddr
-    regFileToBRAM.io.ready := io.ready
+    regFileToBRAM.io.valid := io.valid
     regFileToBRAM.io.resultAddr := io.resultAddr
-    io.valid := regFileToBRAM.io.valid
+    io.ready := regFileToBRAM.io.ready
 
     val dpBRAM = Module(new DualPortBRAM(width = DATA_WIDTH, depth = 2^ADDR_WIDTH))
 
