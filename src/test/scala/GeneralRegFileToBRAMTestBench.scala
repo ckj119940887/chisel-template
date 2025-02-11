@@ -117,3 +117,30 @@ class AXIWrapperChiselGeneralRegFileToBRAMTestBench extends AnyFlatSpec with Chi
     }
   }
 }
+
+class Adder64TestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "Adder64" should "work" in {
+    test(new Adder64).withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(false.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(true.B)
+
+      // write startAddr signal
+      dut.io.x.poke("h0000000000000001".U)
+      dut.io.y.poke("h0000000000000002".U)
+      dut.clock.step()
+
+      dut.io.valid.poke(true.B)
+      dut.clock.step()
+
+      for(i <- 0 until 10) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
