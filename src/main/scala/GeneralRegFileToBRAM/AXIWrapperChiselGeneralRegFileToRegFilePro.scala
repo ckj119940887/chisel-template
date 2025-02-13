@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental._
 
-class AXIWrapperChiselGeneralRegFileToRegFile(val C_S_AXI_ADDR_WIDTH: Int = 32, 
+class AXIWrapperChiselGeneralRegFileToRegFilePro(val C_S_AXI_ADDR_WIDTH: Int = 32, 
                                               val C_S_AXI_DATA_WIDTH: Int = 32,
                                               val ARRAY_REG_WIDTH: Int = 8,
                                               val ARRAY_REG_DEPTH: Int = 1024,
@@ -79,21 +79,39 @@ class AXIWrapperChiselGeneralRegFileToRegFile(val C_S_AXI_ADDR_WIDTH: Int = 32,
     // Registers for target module port
     val io_valid_reg = Reg(UInt(32.W))
     val io_ready_reg = Reg(Bool())
-    val io_i_array = Reg(Vec(ARRAY_REG_DEPTH, UInt(ARRAY_REG_WIDTH.W)))
-    val io_o_array = Wire(Vec(ARRAY_REG_DEPTH, UInt(ARRAY_REG_WIDTH.W)))
 
     // instantiate the target module
-    val modRegFileToRegFile = Module(new GeneralRegFileToRegFile(
+    val arrayReadValid = (axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) + 3.U) < ARRAY_REG_DEPTH.U
+    val arrayWriteValid = (axi_awaddr(log2Ceil(ARRAY_REG_DEPTH), 0) + 3.U) < ARRAY_REG_DEPTH.U
+    val arrayReady = axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) === (ARRAY_REG_DEPTH * ARRAY_REG_WIDTH / 8 + 4).U
+    val modRegFileToRegFilePro = Module(new GeneralRegFileToRegFilePro(
                                ARRAY_REG_WIDTH = ARRAY_REG_WIDTH,
                                ARRAY_REG_DEPTH = ARRAY_REG_DEPTH,
                                GENERAL_REG_WIDTH = GENERAL_REG_WIDTH,
                                GENERAL_REG_DEPTH = GENERAL_REG_DEPTH,
                                NUM_STATES = NUM_STATES))
-    modRegFileToRegFile.io.valid := io_valid_reg(0)
-    io_ready_reg := modRegFileToRegFile.io.ready
-    for(i <- 0 until ARRAY_REG_DEPTH) {
-        modRegFileToRegFile.io.i_array(i) := io_i_array(i)
-        io_o_array(i) := modRegFileToRegFile.io.o_array(i)
+    modRegFileToRegFilePro.io.valid := io_valid_reg(0)
+    io_ready_reg := modRegFileToRegFilePro.io.ready
+    modRegFileToRegFilePro.io.arrayRe := slv_reg_rden && arrayReadValid
+    modRegFileToRegFilePro.io.arrayWe := slv_reg_wren && arrayWriteValid
+    modRegFileToRegFilePro.io.arrayStrb := Mux(slv_reg_wren && arrayWriteValid, io.S_AXI_WSTRB, 0.U)
+    modRegFileToRegFilePro.io.arrayAddr := Mux(slv_reg_wren && arrayWriteValid, 
+                                               axi_awaddr(log2Ceil(ARRAY_REG_DEPTH) - 1, 0), 
+                                               axi_araddr(log2Ceil(ARRAY_REG_DEPTH) - 1, 0))
+    modRegFileToRegFilePro.io.arrayWData := Mux(slv_reg_wren && arrayWriteValid, io.S_AXI_WDATA.asUInt, 0.U)
+    // reg_data_out := Mux(arrayReadValid, modRegFileToRegFilePro.io.arrayRData.asSInt, 0.S) |
+    //                 Mux(arrayReady, Cat(0.U, io_ready_reg.asUInt).asSInt, 0.S)
+    
+    when(arrayReadValid) {
+        reg_data_out := modRegFileToRegFilePro.io.arrayRData.asSInt
+    } .elsewhen(arrayReady) {
+        reg_data_out := Cat(0.U, io_ready_reg.asUInt).asSInt
+    }
+
+    when(lowActiveReset.asBool) {
+        io_ready_reg := false.B
+    } .otherwise {
+        io_ready_reg := Mux(modRegFileToRegFilePro.io.ready, true.B, io_ready_reg)
     }
 
     // I/O Connections assignments
@@ -169,21 +187,12 @@ class AXIWrapperChiselGeneralRegFileToRegFile(val C_S_AXI_ADDR_WIDTH: Int = 32,
     // and the slave is ready to accept the write address and write data.
     slv_reg_wren := axi_wready && io.S_AXI_WVALID && axi_awready && io.S_AXI_AWVALID
 
-    val writeEffectiveAddr = axi_awaddr(ADDR_LSB + OPT_MEM_ADDR_BITS, ADDR_LSB)
-    val arrayOffset = writeEffectiveAddr(9, 0)
-    val arrayPortValid = writeEffectiveAddr < ARRAY_REG_DEPTH.U && arrayOffset + (C_S_AXI_DATA_WIDTH/8).U < ARRAY_REG_DEPTH.U
-
-    for (byteIndex <- 0 until (C_S_AXI_DATA_WIDTH/8)) {
-        val index = arrayOffset + byteIndex.U
-        io_i_array(index) := Mux(arrayPortValid && slv_reg_wren, 
-                                 io.S_AXI_WDATA((byteIndex * 8) + 7, byteIndex * 8).asUInt, 
-                                 io_i_array(index))
-    }
+    val writeEffectiveAddr = axi_awaddr(log2Ceil(ARRAY_REG_DEPTH), 0)
 
     when(lowActiveReset.asBool) {
         io_valid_reg := 0.U
     } .otherwise {
-        when(slv_reg_wren && writeEffectiveAddr === ARRAY_REG_DEPTH.U) {
+        when(slv_reg_wren && writeEffectiveAddr === (ARRAY_REG_DEPTH * ARRAY_REG_WIDTH / 8).U) {
                 io_valid_reg := io.S_AXI_WDATA.asUInt
         }
     }
@@ -246,27 +255,10 @@ class AXIWrapperChiselGeneralRegFileToRegFile(val C_S_AXI_ADDR_WIDTH: Int = 32,
         }
     }
 
-    when(lowActiveReset.asBool) {
-        io_ready_reg := false.B
-    } .otherwise {
-        io_ready_reg := Mux(modRegFileToRegFile.io.ready, true.B, io_ready_reg)
-    }
-
     // Implement memory mapped register select and read logic generation
     // Slave register read enable is asserted when valid address is available
     // and the slave is ready to accept the read address.
     slv_reg_rden := axi_arready & io.S_AXI_ARVALID & ~axi_rvalid;
-
-    val readEffectiveAddr = axi_araddr(ADDR_LSB + OPT_MEM_ADDR_BITS, ADDR_LSB)
-    val readOffsetAddr = Cat(readEffectiveAddr, "b00".U)
-    when(readEffectiveAddr < (ARRAY_REG_DEPTH/(GENERAL_REG_WIDTH/8) + 1).U) {
-        reg_data_out := Cat(io_o_array(readOffsetAddr + 3.U), 
-                            io_o_array(readOffsetAddr + 2.U),
-                            io_o_array(readOffsetAddr + 1.U),
-                            io_o_array(readOffsetAddr + 0.U)).asSInt
-    } .elsewhen(readEffectiveAddr === (ARRAY_REG_DEPTH/(GENERAL_REG_WIDTH/8) + 1).U) {
-        reg_data_out := Cat(0.U, io_ready_reg).asSInt()
-    }
 
     // Output register or memory read data
     when(lowActiveReset.asBool) {
