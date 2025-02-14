@@ -73,7 +73,7 @@ class AXIWrapperChiselGeneralRegFileToRegFilePro(val C_S_AXI_ADDR_WIDTH: Int = 3
     //------------------------------------------------
     val slv_reg_rden = Wire(Bool())
     val slv_reg_wren = Wire(Bool())
-    val reg_data_out = Reg(SInt(C_S_AXI_DATA_WIDTH.W))
+    val reg_data_out = Wire(SInt(C_S_AXI_DATA_WIDTH.W))
     val aw_en        = Reg(Bool())
 
     // Registers for target module port
@@ -92,20 +92,20 @@ class AXIWrapperChiselGeneralRegFileToRegFilePro(val C_S_AXI_ADDR_WIDTH: Int = 3
                                NUM_STATES = NUM_STATES))
     modRegFileToRegFilePro.io.valid := io_valid_reg(0)
     io_ready_reg := modRegFileToRegFilePro.io.ready
-    modRegFileToRegFilePro.io.arrayRe := slv_reg_rden && arrayReadValid
+    modRegFileToRegFilePro.io.arrayRe := arrayReadValid
     modRegFileToRegFilePro.io.arrayWe := slv_reg_wren && arrayWriteValid
     modRegFileToRegFilePro.io.arrayStrb := Mux(slv_reg_wren && arrayWriteValid, io.S_AXI_WSTRB, 0.U)
     modRegFileToRegFilePro.io.arrayAddr := Mux(slv_reg_wren && arrayWriteValid, 
                                                axi_awaddr(log2Ceil(ARRAY_REG_DEPTH) - 1, 0), 
-                                               axi_araddr(log2Ceil(ARRAY_REG_DEPTH) - 1, 0))
+                                               Mux(arrayReadValid, axi_araddr(log2Ceil(ARRAY_REG_DEPTH) - 1, 0), 0.U))
     modRegFileToRegFilePro.io.arrayWData := Mux(slv_reg_wren && arrayWriteValid, io.S_AXI_WDATA.asUInt, 0.U)
-    // reg_data_out := Mux(arrayReadValid, modRegFileToRegFilePro.io.arrayRData.asSInt, 0.S) |
-    //                 Mux(arrayReady, Cat(0.U, io_ready_reg.asUInt).asSInt, 0.S)
     
-    when(arrayReadValid) {
-        reg_data_out := modRegFileToRegFilePro.io.arrayRData.asSInt
-    } .elsewhen(arrayReady) {
+    when(arrayReady) {
         reg_data_out := Cat(0.U, io_ready_reg.asUInt).asSInt
+    } .elsewhen(arrayReadValid) {
+        reg_data_out := modRegFileToRegFilePro.io.arrayRData.asSInt
+    } .otherwise {
+        reg_data_out := 0.S
     }
 
     when(lowActiveReset.asBool) {

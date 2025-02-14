@@ -196,9 +196,7 @@ class AXIWrapperChiselGeneralRegFileToRegFileProTestBench extends AnyFlatSpec wi
       dut.io.S_AXI_RREADY.poke(true.B)
       dut.clock.step()
 
-      dut.clock.step()
-
-      // read ready signal
+      // read data signal
       dut.io.S_AXI_ARVALID.poke(true.B)
       dut.io.S_AXI_ARADDR.poke("h40000010".U)
       dut.clock.step()
@@ -206,6 +204,12 @@ class AXIWrapperChiselGeneralRegFileToRegFileProTestBench extends AnyFlatSpec wi
       dut.io.S_AXI_RREADY.poke(true.B)
       dut.clock.step()
 
+      // read data signal
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke("h40000000".U)
+      dut.clock.step()
+
+      dut.io.S_AXI_RREADY.poke(true.B)
       dut.clock.step()
 
       // disable all read signal
