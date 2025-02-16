@@ -18,7 +18,8 @@ class GeneralRegFileToRegFilePro (val C_S_AXI_DATA_WIDTH: Int = 32,
         val arrayRe        = Input(Bool())
         val arrayWe        = Input(Bool())
         val arrayStrb      = Input(UInt((C_S_AXI_DATA_WIDTH/8).W))
-        val arrayAddr      = Input(UInt((log2Ceil(ARRAY_REG_DEPTH)).W))
+        val arrayReadAddr  = Input(UInt((log2Ceil(ARRAY_REG_DEPTH)).W))
+        val arrayWriteAddr = Input(UInt((log2Ceil(ARRAY_REG_DEPTH)).W))
         val arrayWData     = Input(UInt(C_S_AXI_DATA_WIDTH.W))
         val arrayRData     = Output(UInt(C_S_AXI_DATA_WIDTH.W))
     })
@@ -31,15 +32,15 @@ class GeneralRegFileToRegFilePro (val C_S_AXI_DATA_WIDTH: Int = 32,
     val stateReg = RegInit(0.U(log2Ceil(NUM_STATES + 1).W))
 
     for(byteIndex <- 0 until (C_S_AXI_DATA_WIDTH/8)) {
-        when(io.arrayWe && io.arrayStrb(byteIndex.U) === 1.U && io.arrayAddr + byteIndex.U < ARRAY_REG_DEPTH.U) {
-            arrayRegFiles(io.arrayAddr + byteIndex.U) := io.arrayWData((byteIndex * 8) + 7, byteIndex * 8)
+        when(io.arrayWe & (io.arrayStrb(byteIndex.U) === 1.U)) {
+            arrayRegFiles(io.arrayWriteAddr + byteIndex.U) := io.arrayWData((byteIndex * 8) + 7, byteIndex * 8)
         }
     }
 
-    io.arrayRData := Mux(io.arrayRe, Cat(arrayRegFiles(io.arrayAddr), 
-                                         arrayRegFiles(io.arrayAddr + 1.U),
-                                         arrayRegFiles(io.arrayAddr + 2.U),
-                                         arrayRegFiles(io.arrayAddr + 3.U)), 0.U)
+    io.arrayRData := Mux(io.arrayRe, Cat(arrayRegFiles(io.arrayReadAddr + 3.U), 
+                                         arrayRegFiles(io.arrayReadAddr + 2.U),
+                                         arrayRegFiles(io.arrayReadAddr + 1.U),
+                                         arrayRegFiles(io.arrayReadAddr + 0.U)), 0.U)
 
     // val arrayRDataVec = VecInit(Seq.fill(C_S_AXI_DATA_WIDTH / 8)(0.U(8.W)))
     // for (byteIndex <- 0 until (C_S_AXI_DATA_WIDTH / 8)) {
@@ -80,12 +81,12 @@ class GeneralRegFileToRegFilePro (val C_S_AXI_DATA_WIDTH: Int = 32,
             stateReg := 2.U
         }
         is(2.U) {
-            generalRegFiles(4) := generalRegFiles(0) + generalRegFiles(1)
-            generalRegFiles(5) := generalRegFiles(2) + generalRegFiles(3)
+            generalRegFiles(4) := (generalRegFiles(0).asSInt + generalRegFiles(1).asSInt).asUInt
+            generalRegFiles(5) := (generalRegFiles(2).asSInt + generalRegFiles(3).asSInt).asUInt
             stateReg := 3.U
         }
         is(3.U) {
-            generalRegFiles(6) := generalRegFiles(4) + generalRegFiles(5)
+            generalRegFiles(6) := (generalRegFiles(4).asSInt + generalRegFiles(5).asSInt).asUInt
             stateReg := 4.U
         }
         is(4.U) {

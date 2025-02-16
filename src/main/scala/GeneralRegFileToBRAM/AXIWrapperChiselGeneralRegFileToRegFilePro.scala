@@ -8,7 +8,7 @@ class AXIWrapperChiselGeneralRegFileToRegFilePro(val C_S_AXI_ADDR_WIDTH: Int = 3
                                               val C_S_AXI_DATA_WIDTH: Int = 32,
                                               val ARRAY_REG_WIDTH: Int = 8,
                                               val ARRAY_REG_DEPTH: Int = 1024,
-                                              val GENERAL_REG_WIDTH: Int = 32,
+                                              val GENERAL_REG_WIDTH: Int = 64,
                                               val GENERAL_REG_DEPTH: Int = 64,
                                               val NUM_STATES: Int = 10) extends Module {
     val io = IO(new Bundle{
@@ -81,10 +81,14 @@ class AXIWrapperChiselGeneralRegFileToRegFilePro(val C_S_AXI_ADDR_WIDTH: Int = 3
     val io_ready_reg = Reg(Bool())
 
     // instantiate the target module
-    val arrayReadValid = (axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) + 3.U) < ARRAY_REG_DEPTH.U
-    val arrayWriteValid = (axi_awaddr(log2Ceil(ARRAY_REG_DEPTH), 0) + 3.U) < ARRAY_REG_DEPTH.U
-    val arrayReady = axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) === (ARRAY_REG_DEPTH * ARRAY_REG_WIDTH / 8 + 4).U
+    val arrayReadAddrValid = (axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) + 3.U) < ARRAY_REG_DEPTH.U
+    val arrayWriteAddrValid = (axi_awaddr(log2Ceil(ARRAY_REG_DEPTH), 0) + 3.U) < ARRAY_REG_DEPTH.U
+    val arrayWriteValid = slv_reg_wren & arrayWriteAddrValid
+    val arrayReadValid = arrayReadAddrValid & axi_arready & io.S_AXI_ARVALID & ~axi_rvalid
+    val arrayReady = axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) === (ARRAY_REG_DEPTH * ARRAY_REG_WIDTH / 8 + (C_S_AXI_DATA_WIDTH/8)).U
     val modRegFileToRegFilePro = Module(new GeneralRegFileToRegFilePro(
+                               C_S_AXI_DATA_WIDTH = C_S_AXI_DATA_WIDTH,
+                               C_S_AXI_ADDR_WIDTH = C_S_AXI_ADDR_WIDTH,
                                ARRAY_REG_WIDTH = ARRAY_REG_WIDTH,
                                ARRAY_REG_DEPTH = ARRAY_REG_DEPTH,
                                GENERAL_REG_WIDTH = GENERAL_REG_WIDTH,
@@ -92,13 +96,16 @@ class AXIWrapperChiselGeneralRegFileToRegFilePro(val C_S_AXI_ADDR_WIDTH: Int = 3
                                NUM_STATES = NUM_STATES))
     modRegFileToRegFilePro.io.valid := io_valid_reg(0)
     io_ready_reg := modRegFileToRegFilePro.io.ready
-    modRegFileToRegFilePro.io.arrayRe := arrayReadValid
-    modRegFileToRegFilePro.io.arrayWe := slv_reg_wren && arrayWriteValid
-    modRegFileToRegFilePro.io.arrayStrb := Mux(slv_reg_wren && arrayWriteValid, io.S_AXI_WSTRB, 0.U)
-    modRegFileToRegFilePro.io.arrayAddr := Mux(slv_reg_wren && arrayWriteValid, 
-                                               axi_awaddr(log2Ceil(ARRAY_REG_DEPTH) - 1, 0), 
-                                               Mux(arrayReadValid, axi_araddr(log2Ceil(ARRAY_REG_DEPTH) - 1, 0), 0.U))
-    modRegFileToRegFilePro.io.arrayWData := Mux(slv_reg_wren && arrayWriteValid, io.S_AXI_WDATA.asUInt, 0.U)
+    modRegFileToRegFilePro.io.arrayRe := arrayReadValid 
+    modRegFileToRegFilePro.io.arrayWe := arrayWriteValid
+    modRegFileToRegFilePro.io.arrayStrb := Mux(arrayWriteValid, io.S_AXI_WSTRB, 0.U)
+    modRegFileToRegFilePro.io.arrayWriteAddr := Mux(arrayWriteValid, 
+                                                    Cat(axi_awaddr(log2Ceil(ARRAY_REG_DEPTH) - 1, ADDR_LSB), 0.U(ADDR_LSB.W)), 
+                                                    0.U)
+    modRegFileToRegFilePro.io.arrayReadAddr  := Mux(arrayReadValid, 
+                                                    Cat(axi_araddr(log2Ceil(ARRAY_REG_DEPTH) - 1, ADDR_LSB), 0.U(ADDR_LSB.W)), 
+                                                    0.U)
+    modRegFileToRegFilePro.io.arrayWData := Mux(arrayWriteValid, io.S_AXI_WDATA.asUInt, 0.U)
     
     when(arrayReady) {
         reg_data_out := Cat(0.U, io_ready_reg.asUInt).asSInt
