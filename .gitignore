@@ -1,6 +1,7 @@
 ### Project Specific stuff
 generated_verilog/*
 test_run_dir/*
+out/*
 ### XilinxISE template
 # intermediate build files
 *.bgn

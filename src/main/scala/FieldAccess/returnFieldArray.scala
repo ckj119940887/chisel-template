@@ -29,7 +29,7 @@ class returnFieldArray extends Module {
             state := Mux(i <  5.S, 2.U, 9.U)
         }
         is(2.U) {
-            f((i).asUInt()).f := io.a
+            f(i.asUInt()).f := io.a
             state := 3.U
         }
         is(3.U) {
