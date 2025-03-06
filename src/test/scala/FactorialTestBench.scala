@@ -280,6 +280,19 @@ class GeneratedSquareTestBench extends AnyFlatSpec with ChiselScalatestTester {
       dut.reset.poke(false.B)
       dut.clock.step()
 
+      // size
+      dut.io.arrayWe.poke(true.B)
+      dut.io.arrayWriteAddr.poke(7.U)
+      dut.io.arrayWData.poke("h00000006".U)
+      dut.io.arrayStrb.poke("b1111".U)
+      dut.clock.step()
+
+      dut.io.arrayWe.poke(true.B)
+      dut.io.arrayWriteAddr.poke(19.U)
+      dut.io.arrayWData.poke("h00000000".U)
+      dut.io.arrayStrb.poke("b1111".U)
+      dut.clock.step()
+
       // first number
       dut.io.arrayWe.poke(true.B)
       dut.io.arrayWriteAddr.poke(15.U)
