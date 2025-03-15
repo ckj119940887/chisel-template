@@ -37,6 +37,9 @@ class factorial (val C_S_AXI_DATA_WIDTH:  Int = 32,
     val DP = RegInit(0.U(STACK_POINTER_WIDTH.W))
     // reg for index in memcopy
     val Idx = RegInit(0.U(16.W))
+    // reg for recording how many rounds needed for the left bytes
+    val LeftByteRounds = RegInit(0.U(8.W))
+    val IdxLeftByteRounds = RegInit(0.U(8.W))
 
     // write operation
     for(byteIndex <- 0 until (C_S_AXI_DATA_WIDTH/8)) {
@@ -70,14 +73,14 @@ class factorial (val C_S_AXI_DATA_WIDTH:  Int = 32,
 
         SP := 0.U
 
-        val __tmp_103 = 0.U
-        val __tmp_104 = (0.U(8.W)).asUInt
-        arrayRegFiles(__tmp_103 + 0.U) := __tmp_104(7, 0)
+        val __tmp_1696 = 0.U
+        val __tmp_1697 = (0.U(8.W)).asUInt
+        arrayRegFiles(__tmp_1696 + 0.U) := __tmp_1697(7, 0)
 
-        val __tmp_105 = 1.U
-        val __tmp_106 = (3.U(16.W)).asUInt
-        arrayRegFiles(__tmp_105 + 0.U) := __tmp_106(7, 0)
-        arrayRegFiles(__tmp_105 + 1.U) := __tmp_106(15, 8)
+        val __tmp_1698 = 1.U
+        val __tmp_1699 = (3.U(16.W)).asUInt
+        arrayRegFiles(__tmp_1698 + 0.U) := __tmp_1699(7, 0)
+        arrayRegFiles(__tmp_1698 + 1.U) := __tmp_1699(15, 8)
 
         CP := 4.U
       }
@@ -89,12 +92,12 @@ class factorial (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_107 = (SP + 7.U).asUInt
+        val __tmp_1700 = (SP + 7.U).asUInt
         generalRegFiles(0.U) := Cat(
-          arrayRegFiles(__tmp_107 + 3.U),
-          arrayRegFiles(__tmp_107 + 2.U),
-          arrayRegFiles(__tmp_107 + 1.U),
-          arrayRegFiles(__tmp_107 + 0.U)
+          arrayRegFiles(__tmp_1700 + 3.U),
+          arrayRegFiles(__tmp_1700 + 2.U),
+          arrayRegFiles(__tmp_1700 + 1.U),
+          arrayRegFiles(__tmp_1700 + 0.U)
         ).asUInt
 
         CP := 5.U
@@ -127,15 +130,15 @@ class factorial (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_108 = Cat(
+        val __tmp_1701 = Cat(
           arrayRegFiles(SP + 1.U + 1.U),
           arrayRegFiles(SP + 1.U + 0.U)
         )
-        val __tmp_109 = (1.U(32.W)).asUInt
-        arrayRegFiles(__tmp_108 + 0.U) := __tmp_109(7, 0)
-        arrayRegFiles(__tmp_108 + 1.U) := __tmp_109(15, 8)
-        arrayRegFiles(__tmp_108 + 2.U) := __tmp_109(23, 16)
-        arrayRegFiles(__tmp_108 + 3.U) := __tmp_109(31, 24)
+        val __tmp_1702 = (1.U(32.W)).asUInt
+        arrayRegFiles(__tmp_1701 + 0.U) := __tmp_1702(7, 0)
+        arrayRegFiles(__tmp_1701 + 1.U) := __tmp_1702(15, 8)
+        arrayRegFiles(__tmp_1701 + 2.U) := __tmp_1702(23, 16)
+        arrayRegFiles(__tmp_1701 + 3.U) := __tmp_1702(31, 24)
 
         CP := Cat(
           arrayRegFiles(SP + 0.U + 0.U)
@@ -151,20 +154,20 @@ class factorial (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_110 = (SP + 7.U).asUInt
+        val __tmp_1703 = (SP + 7.U).asUInt
         generalRegFiles(0.U) := Cat(
-          arrayRegFiles(__tmp_110 + 3.U),
-          arrayRegFiles(__tmp_110 + 2.U),
-          arrayRegFiles(__tmp_110 + 1.U),
-          arrayRegFiles(__tmp_110 + 0.U)
+          arrayRegFiles(__tmp_1703 + 3.U),
+          arrayRegFiles(__tmp_1703 + 2.U),
+          arrayRegFiles(__tmp_1703 + 1.U),
+          arrayRegFiles(__tmp_1703 + 0.U)
         ).asUInt
 
-        val __tmp_111 = (SP + 7.U).asUInt
+        val __tmp_1704 = (SP + 7.U).asUInt
         generalRegFiles(1.U) := Cat(
-          arrayRegFiles(__tmp_111 + 3.U),
-          arrayRegFiles(__tmp_111 + 2.U),
-          arrayRegFiles(__tmp_111 + 1.U),
-          arrayRegFiles(__tmp_111 + 0.U)
+          arrayRegFiles(__tmp_1704 + 3.U),
+          arrayRegFiles(__tmp_1704 + 2.U),
+          arrayRegFiles(__tmp_1704 + 1.U),
+          arrayRegFiles(__tmp_1704 + 0.U)
         ).asUInt
 
         CP := 9.U
@@ -188,7 +191,7 @@ class factorial (val C_S_AXI_DATA_WIDTH:  Int = 32,
 
       is(10.U) {
         /*
-        *SP = 11 [signed, CP, 1]  // $ret@0 = 12
+        *SP = 11 [unsigned, CP, 1]  // $ret@0 = 12
         *(SP + 1) = (SP - 28) [unsigned, SP, 2]  // $res@1 = -28
         *(SP + 7) = $2 [unsigned, U32, 4]  // n = $2
         *(SP - 24) = $0 [unsigned, U64, 8]  // save $0
@@ -198,54 +201,54 @@ class factorial (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_112 = SP
-        val __tmp_113 = (11.S(8.W)).asUInt
-        arrayRegFiles(__tmp_112 + 0.U) := __tmp_113(7, 0)
+        val __tmp_1705 = SP
+        val __tmp_1706 = (11.U(8.W)).asUInt
+        arrayRegFiles(__tmp_1705 + 0.U) := __tmp_1706(7, 0)
 
-        val __tmp_114 = SP + 1.U
-        val __tmp_115 = (SP - 28.U).asUInt
-        arrayRegFiles(__tmp_114 + 0.U) := __tmp_115(7, 0)
-        arrayRegFiles(__tmp_114 + 1.U) := __tmp_115(15, 8)
+        val __tmp_1707 = SP + 1.U
+        val __tmp_1708 = (SP - 28.U).asUInt
+        arrayRegFiles(__tmp_1707 + 0.U) := __tmp_1708(7, 0)
+        arrayRegFiles(__tmp_1707 + 1.U) := __tmp_1708(15, 8)
 
-        val __tmp_116 = SP + 7.U
-        val __tmp_117 = (generalRegFiles(2.U)).asUInt
-        arrayRegFiles(__tmp_116 + 0.U) := __tmp_117(7, 0)
-        arrayRegFiles(__tmp_116 + 1.U) := __tmp_117(15, 8)
-        arrayRegFiles(__tmp_116 + 2.U) := __tmp_117(23, 16)
-        arrayRegFiles(__tmp_116 + 3.U) := __tmp_117(31, 24)
+        val __tmp_1709 = SP + 7.U
+        val __tmp_1710 = (generalRegFiles(2.U)).asUInt
+        arrayRegFiles(__tmp_1709 + 0.U) := __tmp_1710(7, 0)
+        arrayRegFiles(__tmp_1709 + 1.U) := __tmp_1710(15, 8)
+        arrayRegFiles(__tmp_1709 + 2.U) := __tmp_1710(23, 16)
+        arrayRegFiles(__tmp_1709 + 3.U) := __tmp_1710(31, 24)
 
-        val __tmp_118 = SP - 24.U
-        val __tmp_119 = (generalRegFiles(0.U)).asUInt
-        arrayRegFiles(__tmp_118 + 0.U) := __tmp_119(7, 0)
-        arrayRegFiles(__tmp_118 + 1.U) := __tmp_119(15, 8)
-        arrayRegFiles(__tmp_118 + 2.U) := __tmp_119(23, 16)
-        arrayRegFiles(__tmp_118 + 3.U) := __tmp_119(31, 24)
-        arrayRegFiles(__tmp_118 + 4.U) := __tmp_119(39, 32)
-        arrayRegFiles(__tmp_118 + 5.U) := __tmp_119(47, 40)
-        arrayRegFiles(__tmp_118 + 6.U) := __tmp_119(55, 48)
-        arrayRegFiles(__tmp_118 + 7.U) := __tmp_119(63, 56)
+        val __tmp_1711 = SP - 24.U
+        val __tmp_1712 = (generalRegFiles(0.U)).asUInt
+        arrayRegFiles(__tmp_1711 + 0.U) := __tmp_1712(7, 0)
+        arrayRegFiles(__tmp_1711 + 1.U) := __tmp_1712(15, 8)
+        arrayRegFiles(__tmp_1711 + 2.U) := __tmp_1712(23, 16)
+        arrayRegFiles(__tmp_1711 + 3.U) := __tmp_1712(31, 24)
+        arrayRegFiles(__tmp_1711 + 4.U) := __tmp_1712(39, 32)
+        arrayRegFiles(__tmp_1711 + 5.U) := __tmp_1712(47, 40)
+        arrayRegFiles(__tmp_1711 + 6.U) := __tmp_1712(55, 48)
+        arrayRegFiles(__tmp_1711 + 7.U) := __tmp_1712(63, 56)
 
-        val __tmp_120 = SP - 16.U
-        val __tmp_121 = (generalRegFiles(1.U)).asUInt
-        arrayRegFiles(__tmp_120 + 0.U) := __tmp_121(7, 0)
-        arrayRegFiles(__tmp_120 + 1.U) := __tmp_121(15, 8)
-        arrayRegFiles(__tmp_120 + 2.U) := __tmp_121(23, 16)
-        arrayRegFiles(__tmp_120 + 3.U) := __tmp_121(31, 24)
-        arrayRegFiles(__tmp_120 + 4.U) := __tmp_121(39, 32)
-        arrayRegFiles(__tmp_120 + 5.U) := __tmp_121(47, 40)
-        arrayRegFiles(__tmp_120 + 6.U) := __tmp_121(55, 48)
-        arrayRegFiles(__tmp_120 + 7.U) := __tmp_121(63, 56)
+        val __tmp_1713 = SP - 16.U
+        val __tmp_1714 = (generalRegFiles(1.U)).asUInt
+        arrayRegFiles(__tmp_1713 + 0.U) := __tmp_1714(7, 0)
+        arrayRegFiles(__tmp_1713 + 1.U) := __tmp_1714(15, 8)
+        arrayRegFiles(__tmp_1713 + 2.U) := __tmp_1714(23, 16)
+        arrayRegFiles(__tmp_1713 + 3.U) := __tmp_1714(31, 24)
+        arrayRegFiles(__tmp_1713 + 4.U) := __tmp_1714(39, 32)
+        arrayRegFiles(__tmp_1713 + 5.U) := __tmp_1714(47, 40)
+        arrayRegFiles(__tmp_1713 + 6.U) := __tmp_1714(55, 48)
+        arrayRegFiles(__tmp_1713 + 7.U) := __tmp_1714(63, 56)
 
-        val __tmp_122 = SP - 8.U
-        val __tmp_123 = (generalRegFiles(2.U)).asUInt
-        arrayRegFiles(__tmp_122 + 0.U) := __tmp_123(7, 0)
-        arrayRegFiles(__tmp_122 + 1.U) := __tmp_123(15, 8)
-        arrayRegFiles(__tmp_122 + 2.U) := __tmp_123(23, 16)
-        arrayRegFiles(__tmp_122 + 3.U) := __tmp_123(31, 24)
-        arrayRegFiles(__tmp_122 + 4.U) := __tmp_123(39, 32)
-        arrayRegFiles(__tmp_122 + 5.U) := __tmp_123(47, 40)
-        arrayRegFiles(__tmp_122 + 6.U) := __tmp_123(55, 48)
-        arrayRegFiles(__tmp_122 + 7.U) := __tmp_123(63, 56)
+        val __tmp_1715 = SP - 8.U
+        val __tmp_1716 = (generalRegFiles(2.U)).asUInt
+        arrayRegFiles(__tmp_1715 + 0.U) := __tmp_1716(7, 0)
+        arrayRegFiles(__tmp_1715 + 1.U) := __tmp_1716(15, 8)
+        arrayRegFiles(__tmp_1715 + 2.U) := __tmp_1716(23, 16)
+        arrayRegFiles(__tmp_1715 + 3.U) := __tmp_1716(31, 24)
+        arrayRegFiles(__tmp_1715 + 4.U) := __tmp_1716(39, 32)
+        arrayRegFiles(__tmp_1715 + 5.U) := __tmp_1716(47, 40)
+        arrayRegFiles(__tmp_1715 + 6.U) := __tmp_1716(55, 48)
+        arrayRegFiles(__tmp_1715 + 7.U) := __tmp_1716(63, 56)
 
         CP := 4.U
       }
@@ -262,51 +265,51 @@ class factorial (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_124 = (SP - 24.U).asUInt
+        val __tmp_1717 = (SP - 24.U).asUInt
         generalRegFiles(0.U) := Cat(
-          arrayRegFiles(__tmp_124 + 7.U),
-          arrayRegFiles(__tmp_124 + 6.U),
-          arrayRegFiles(__tmp_124 + 5.U),
-          arrayRegFiles(__tmp_124 + 4.U),
-          arrayRegFiles(__tmp_124 + 3.U),
-          arrayRegFiles(__tmp_124 + 2.U),
-          arrayRegFiles(__tmp_124 + 1.U),
-          arrayRegFiles(__tmp_124 + 0.U)
+          arrayRegFiles(__tmp_1717 + 7.U),
+          arrayRegFiles(__tmp_1717 + 6.U),
+          arrayRegFiles(__tmp_1717 + 5.U),
+          arrayRegFiles(__tmp_1717 + 4.U),
+          arrayRegFiles(__tmp_1717 + 3.U),
+          arrayRegFiles(__tmp_1717 + 2.U),
+          arrayRegFiles(__tmp_1717 + 1.U),
+          arrayRegFiles(__tmp_1717 + 0.U)
         ).asUInt
 
-        val __tmp_125 = (SP - 16.U).asUInt
+        val __tmp_1718 = (SP - 16.U).asUInt
         generalRegFiles(1.U) := Cat(
-          arrayRegFiles(__tmp_125 + 7.U),
-          arrayRegFiles(__tmp_125 + 6.U),
-          arrayRegFiles(__tmp_125 + 5.U),
-          arrayRegFiles(__tmp_125 + 4.U),
-          arrayRegFiles(__tmp_125 + 3.U),
-          arrayRegFiles(__tmp_125 + 2.U),
-          arrayRegFiles(__tmp_125 + 1.U),
-          arrayRegFiles(__tmp_125 + 0.U)
+          arrayRegFiles(__tmp_1718 + 7.U),
+          arrayRegFiles(__tmp_1718 + 6.U),
+          arrayRegFiles(__tmp_1718 + 5.U),
+          arrayRegFiles(__tmp_1718 + 4.U),
+          arrayRegFiles(__tmp_1718 + 3.U),
+          arrayRegFiles(__tmp_1718 + 2.U),
+          arrayRegFiles(__tmp_1718 + 1.U),
+          arrayRegFiles(__tmp_1718 + 0.U)
         ).asUInt
 
-        val __tmp_126 = (SP - 8.U).asUInt
+        val __tmp_1719 = (SP - 8.U).asUInt
         generalRegFiles(2.U) := Cat(
-          arrayRegFiles(__tmp_126 + 7.U),
-          arrayRegFiles(__tmp_126 + 6.U),
-          arrayRegFiles(__tmp_126 + 5.U),
-          arrayRegFiles(__tmp_126 + 4.U),
-          arrayRegFiles(__tmp_126 + 3.U),
-          arrayRegFiles(__tmp_126 + 2.U),
-          arrayRegFiles(__tmp_126 + 1.U),
-          arrayRegFiles(__tmp_126 + 0.U)
+          arrayRegFiles(__tmp_1719 + 7.U),
+          arrayRegFiles(__tmp_1719 + 6.U),
+          arrayRegFiles(__tmp_1719 + 5.U),
+          arrayRegFiles(__tmp_1719 + 4.U),
+          arrayRegFiles(__tmp_1719 + 3.U),
+          arrayRegFiles(__tmp_1719 + 2.U),
+          arrayRegFiles(__tmp_1719 + 1.U),
+          arrayRegFiles(__tmp_1719 + 0.U)
         ).asUInt
 
-        val __tmp_127 = (Cat(
+        val __tmp_1720 = (Cat(
           arrayRegFiles(SP + 1.U + 3.U),
           arrayRegFiles(SP + 1.U + 2.U),
           arrayRegFiles(SP + 1.U + 1.U),
           arrayRegFiles(SP + 1.U + 0.U)
         )).asUInt
         generalRegFiles(3.U) := Cat(
-          arrayRegFiles(__tmp_127 + 1.U),
-          arrayRegFiles(__tmp_127 + 0.U)
+          arrayRegFiles(__tmp_1720 + 1.U),
+          arrayRegFiles(__tmp_1720 + 0.U)
         ).asUInt
 
         SP := SP - 39.U
@@ -333,15 +336,15 @@ class factorial (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_128 = Cat(
+        val __tmp_1721 = Cat(
           arrayRegFiles(SP + 1.U + 1.U),
           arrayRegFiles(SP + 1.U + 0.U)
         )
-        val __tmp_129 = (generalRegFiles(4.U)).asUInt
-        arrayRegFiles(__tmp_128 + 0.U) := __tmp_129(7, 0)
-        arrayRegFiles(__tmp_128 + 1.U) := __tmp_129(15, 8)
-        arrayRegFiles(__tmp_128 + 2.U) := __tmp_129(23, 16)
-        arrayRegFiles(__tmp_128 + 3.U) := __tmp_129(31, 24)
+        val __tmp_1722 = (generalRegFiles(4.U)).asUInt
+        arrayRegFiles(__tmp_1721 + 0.U) := __tmp_1722(7, 0)
+        arrayRegFiles(__tmp_1721 + 1.U) := __tmp_1722(15, 8)
+        arrayRegFiles(__tmp_1721 + 2.U) := __tmp_1722(23, 16)
+        arrayRegFiles(__tmp_1721 + 3.U) := __tmp_1722(31, 24)
 
         CP := Cat(
           arrayRegFiles(SP + 0.U + 0.U)

@@ -37,6 +37,9 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
     val DP = RegInit(0.U(STACK_POINTER_WIDTH.W))
     // reg for index in memcopy
     val Idx = RegInit(0.U(16.W))
+    // reg for recording how many rounds needed for the left bytes
+    val LeftByteRounds = RegInit(0.U(8.W))
+    val IdxLeftByteRounds = RegInit(0.U(8.W))
 
     // write operation
     for(byteIndex <- 0 until (C_S_AXI_DATA_WIDTH/8)) {
@@ -70,14 +73,14 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
 
         SP := 0.U
 
-        val __tmp_168 = 0.U
-        val __tmp_169 = (0.U(8.W)).asUInt
-        arrayRegFiles(__tmp_168 + 0.U) := __tmp_169(7, 0)
+        val __tmp_1814 = 0.U
+        val __tmp_1815 = (0.U(8.W)).asUInt
+        arrayRegFiles(__tmp_1814 + 0.U) := __tmp_1815(7, 0)
 
-        val __tmp_170 = 1.U
-        val __tmp_171 = (3.U(16.W)).asUInt
-        arrayRegFiles(__tmp_170 + 0.U) := __tmp_171(7, 0)
-        arrayRegFiles(__tmp_170 + 1.U) := __tmp_171(15, 8)
+        val __tmp_1816 = 1.U
+        val __tmp_1817 = (3.U(16.W)).asUInt
+        arrayRegFiles(__tmp_1816 + 0.U) := __tmp_1817(7, 0)
+        arrayRegFiles(__tmp_1816 + 1.U) := __tmp_1817(15, 8)
 
         CP := 4.U
       }
@@ -90,9 +93,9 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_172 = SP + 63.U
-        val __tmp_173 = (0.S(8.W)).asUInt
-        arrayRegFiles(__tmp_172 + 0.U) := __tmp_173(7, 0)
+        val __tmp_1818 = SP + 63.U
+        val __tmp_1819 = (0.S(8.W)).asUInt
+        arrayRegFiles(__tmp_1818 + 0.U) := __tmp_1819(7, 0)
 
         CP := 5.U
       }
@@ -104,9 +107,9 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_174 = (SP + 63.U).asUInt
+        val __tmp_1820 = (SP + 63.U).asUInt
         generalRegFiles(0.U) := Cat(
-          arrayRegFiles(__tmp_174 + 0.U)
+          arrayRegFiles(__tmp_1820 + 0.U)
         ).asUInt
 
         CP := 6.U
@@ -142,26 +145,26 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_175 = (SP + 1.U).asUInt
+        val __tmp_1821 = (SP + 1.U).asUInt
         generalRegFiles(0.U) := Cat(
-          arrayRegFiles(__tmp_175 + 1.U),
-          arrayRegFiles(__tmp_175 + 0.U)
+          arrayRegFiles(__tmp_1821 + 1.U),
+          arrayRegFiles(__tmp_1821 + 0.U)
         ).asUInt
 
-        val __tmp_176 = (SP + 63.U).asUInt
+        val __tmp_1822 = (SP + 63.U).asUInt
         generalRegFiles(1.U) := Cat(
-          arrayRegFiles(__tmp_176 + 0.U)
+          arrayRegFiles(__tmp_1822 + 0.U)
         ).asUInt
 
-        val __tmp_177 = (SP + 1.U).asUInt
+        val __tmp_1823 = (SP + 1.U).asUInt
         generalRegFiles(3.U) := Cat(
-          arrayRegFiles(__tmp_177 + 1.U),
-          arrayRegFiles(__tmp_177 + 0.U)
+          arrayRegFiles(__tmp_1823 + 1.U),
+          arrayRegFiles(__tmp_1823 + 0.U)
         ).asUInt
 
-        val __tmp_178 = (SP + 63.U).asUInt
+        val __tmp_1824 = (SP + 63.U).asUInt
         generalRegFiles(2.U) := Cat(
-          arrayRegFiles(__tmp_178 + 0.U)
+          arrayRegFiles(__tmp_1824 + 0.U)
         ).asUInt
 
         CP := 9.U
@@ -194,27 +197,27 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_179 = (generalRegFiles(3.U) + 12.U + generalRegFiles(2.U).asUInt * 8.U).asUInt
+        val __tmp_1825 = (generalRegFiles(3.U) + 12.U + generalRegFiles(2.U).asUInt * 8.U).asUInt
         generalRegFiles(6.U) := Cat(
-          arrayRegFiles(__tmp_179 + 7.U),
-          arrayRegFiles(__tmp_179 + 6.U),
-          arrayRegFiles(__tmp_179 + 5.U),
-          arrayRegFiles(__tmp_179 + 4.U),
-          arrayRegFiles(__tmp_179 + 3.U),
-          arrayRegFiles(__tmp_179 + 2.U),
-          arrayRegFiles(__tmp_179 + 1.U),
-          arrayRegFiles(__tmp_179 + 0.U)
+          arrayRegFiles(__tmp_1825 + 7.U),
+          arrayRegFiles(__tmp_1825 + 6.U),
+          arrayRegFiles(__tmp_1825 + 5.U),
+          arrayRegFiles(__tmp_1825 + 4.U),
+          arrayRegFiles(__tmp_1825 + 3.U),
+          arrayRegFiles(__tmp_1825 + 2.U),
+          arrayRegFiles(__tmp_1825 + 1.U),
+          arrayRegFiles(__tmp_1825 + 0.U)
         ).asUInt
 
-        val __tmp_180 = (SP + 1.U).asUInt
+        val __tmp_1826 = (SP + 1.U).asUInt
         generalRegFiles(5.U) := Cat(
-          arrayRegFiles(__tmp_180 + 1.U),
-          arrayRegFiles(__tmp_180 + 0.U)
+          arrayRegFiles(__tmp_1826 + 1.U),
+          arrayRegFiles(__tmp_1826 + 0.U)
         ).asUInt
 
-        val __tmp_181 = (SP + 63.U).asUInt
+        val __tmp_1827 = (SP + 63.U).asUInt
         generalRegFiles(4.U) := Cat(
-          arrayRegFiles(__tmp_181 + 0.U)
+          arrayRegFiles(__tmp_1827 + 0.U)
         ).asUInt
 
         CP := 11.U
@@ -245,16 +248,16 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_182 = (generalRegFiles(5.U) + 12.U + generalRegFiles(4.U).asUInt * 8.U).asUInt
+        val __tmp_1828 = (generalRegFiles(5.U) + 12.U + generalRegFiles(4.U).asUInt * 8.U).asUInt
         generalRegFiles(7.U) := Cat(
-          arrayRegFiles(__tmp_182 + 7.U),
-          arrayRegFiles(__tmp_182 + 6.U),
-          arrayRegFiles(__tmp_182 + 5.U),
-          arrayRegFiles(__tmp_182 + 4.U),
-          arrayRegFiles(__tmp_182 + 3.U),
-          arrayRegFiles(__tmp_182 + 2.U),
-          arrayRegFiles(__tmp_182 + 1.U),
-          arrayRegFiles(__tmp_182 + 0.U)
+          arrayRegFiles(__tmp_1828 + 7.U),
+          arrayRegFiles(__tmp_1828 + 6.U),
+          arrayRegFiles(__tmp_1828 + 5.U),
+          arrayRegFiles(__tmp_1828 + 4.U),
+          arrayRegFiles(__tmp_1828 + 3.U),
+          arrayRegFiles(__tmp_1828 + 2.U),
+          arrayRegFiles(__tmp_1828 + 1.U),
+          arrayRegFiles(__tmp_1828 + 0.U)
         ).asUInt
 
         CP := 13.U
@@ -287,16 +290,16 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_183 = generalRegFiles(0.U) + 12.U + generalRegFiles(1.U).asUInt * 8.U
-        val __tmp_184 = (generalRegFiles(8.U)).asUInt
-        arrayRegFiles(__tmp_183 + 0.U) := __tmp_184(7, 0)
-        arrayRegFiles(__tmp_183 + 1.U) := __tmp_184(15, 8)
-        arrayRegFiles(__tmp_183 + 2.U) := __tmp_184(23, 16)
-        arrayRegFiles(__tmp_183 + 3.U) := __tmp_184(31, 24)
-        arrayRegFiles(__tmp_183 + 4.U) := __tmp_184(39, 32)
-        arrayRegFiles(__tmp_183 + 5.U) := __tmp_184(47, 40)
-        arrayRegFiles(__tmp_183 + 6.U) := __tmp_184(55, 48)
-        arrayRegFiles(__tmp_183 + 7.U) := __tmp_184(63, 56)
+        val __tmp_1829 = generalRegFiles(0.U) + 12.U + generalRegFiles(1.U).asUInt * 8.U
+        val __tmp_1830 = (generalRegFiles(8.U)).asUInt
+        arrayRegFiles(__tmp_1829 + 0.U) := __tmp_1830(7, 0)
+        arrayRegFiles(__tmp_1829 + 1.U) := __tmp_1830(15, 8)
+        arrayRegFiles(__tmp_1829 + 2.U) := __tmp_1830(23, 16)
+        arrayRegFiles(__tmp_1829 + 3.U) := __tmp_1830(31, 24)
+        arrayRegFiles(__tmp_1829 + 4.U) := __tmp_1830(39, 32)
+        arrayRegFiles(__tmp_1829 + 5.U) := __tmp_1830(47, 40)
+        arrayRegFiles(__tmp_1829 + 6.U) := __tmp_1830(55, 48)
+        arrayRegFiles(__tmp_1829 + 7.U) := __tmp_1830(63, 56)
 
         CP := 15.U
       }
@@ -308,9 +311,9 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_185 = (SP + 63.U).asUInt
+        val __tmp_1831 = (SP + 63.U).asUInt
         generalRegFiles(0.U) := Cat(
-          arrayRegFiles(__tmp_185 + 0.U)
+          arrayRegFiles(__tmp_1831 + 0.U)
         ).asUInt
 
         CP := 16.U
@@ -343,9 +346,9 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_186 = SP + 63.U
-        val __tmp_187 = (generalRegFiles(1.U)).asUInt
-        arrayRegFiles(__tmp_186 + 0.U) := __tmp_187(7, 0)
+        val __tmp_1832 = SP + 63.U
+        val __tmp_1833 = (generalRegFiles(1.U)).asUInt
+        arrayRegFiles(__tmp_1832 + 0.U) := __tmp_1833(7, 0)
 
         CP := 5.U
       }
@@ -358,16 +361,16 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_188 = (SP + 1.U).asUInt
+        val __tmp_1834 = (SP + 1.U).asUInt
         generalRegFiles(0.U) := Cat(
-          arrayRegFiles(__tmp_188 + 1.U),
-          arrayRegFiles(__tmp_188 + 0.U)
+          arrayRegFiles(__tmp_1834 + 1.U),
+          arrayRegFiles(__tmp_1834 + 0.U)
         ).asUInt
 
-        val __tmp_189 = (SP + 1.U).asUInt
+        val __tmp_1835 = (SP + 1.U).asUInt
         generalRegFiles(1.U) := Cat(
-          arrayRegFiles(__tmp_189 + 1.U),
-          arrayRegFiles(__tmp_189 + 0.U)
+          arrayRegFiles(__tmp_1835 + 1.U),
+          arrayRegFiles(__tmp_1835 + 0.U)
         ).asUInt
 
         CP := 24.U
@@ -399,22 +402,22 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_190 = (generalRegFiles(1.U) + 12.U + 5.U.asUInt * 8.U).asUInt
+        val __tmp_1836 = (generalRegFiles(1.U) + 12.U + 5.U.asUInt * 8.U).asUInt
         generalRegFiles(3.U) := Cat(
-          arrayRegFiles(__tmp_190 + 7.U),
-          arrayRegFiles(__tmp_190 + 6.U),
-          arrayRegFiles(__tmp_190 + 5.U),
-          arrayRegFiles(__tmp_190 + 4.U),
-          arrayRegFiles(__tmp_190 + 3.U),
-          arrayRegFiles(__tmp_190 + 2.U),
-          arrayRegFiles(__tmp_190 + 1.U),
-          arrayRegFiles(__tmp_190 + 0.U)
+          arrayRegFiles(__tmp_1836 + 7.U),
+          arrayRegFiles(__tmp_1836 + 6.U),
+          arrayRegFiles(__tmp_1836 + 5.U),
+          arrayRegFiles(__tmp_1836 + 4.U),
+          arrayRegFiles(__tmp_1836 + 3.U),
+          arrayRegFiles(__tmp_1836 + 2.U),
+          arrayRegFiles(__tmp_1836 + 1.U),
+          arrayRegFiles(__tmp_1836 + 0.U)
         ).asUInt
 
-        val __tmp_191 = (SP + 1.U).asUInt
+        val __tmp_1837 = (SP + 1.U).asUInt
         generalRegFiles(2.U) := Cat(
-          arrayRegFiles(__tmp_191 + 1.U),
-          arrayRegFiles(__tmp_191 + 0.U)
+          arrayRegFiles(__tmp_1837 + 1.U),
+          arrayRegFiles(__tmp_1837 + 0.U)
         ).asUInt
 
         CP := 26.U
@@ -445,16 +448,16 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_192 = (generalRegFiles(2.U) + 12.U + 5.U.asUInt * 8.U).asUInt
+        val __tmp_1838 = (generalRegFiles(2.U) + 12.U + 5.U.asUInt * 8.U).asUInt
         generalRegFiles(6.U) := Cat(
-          arrayRegFiles(__tmp_192 + 7.U),
-          arrayRegFiles(__tmp_192 + 6.U),
-          arrayRegFiles(__tmp_192 + 5.U),
-          arrayRegFiles(__tmp_192 + 4.U),
-          arrayRegFiles(__tmp_192 + 3.U),
-          arrayRegFiles(__tmp_192 + 2.U),
-          arrayRegFiles(__tmp_192 + 1.U),
-          arrayRegFiles(__tmp_192 + 0.U)
+          arrayRegFiles(__tmp_1838 + 7.U),
+          arrayRegFiles(__tmp_1838 + 6.U),
+          arrayRegFiles(__tmp_1838 + 5.U),
+          arrayRegFiles(__tmp_1838 + 4.U),
+          arrayRegFiles(__tmp_1838 + 3.U),
+          arrayRegFiles(__tmp_1838 + 2.U),
+          arrayRegFiles(__tmp_1838 + 1.U),
+          arrayRegFiles(__tmp_1838 + 0.U)
         ).asUInt
 
         CP := 28.U
@@ -487,16 +490,16 @@ class square (val C_S_AXI_DATA_WIDTH:  Int = 32,
         */
 
 
-        val __tmp_193 = generalRegFiles(0.U) + 12.U + 5.U.asUInt * 8.U
-        val __tmp_194 = (generalRegFiles(5.U)).asUInt
-        arrayRegFiles(__tmp_193 + 0.U) := __tmp_194(7, 0)
-        arrayRegFiles(__tmp_193 + 1.U) := __tmp_194(15, 8)
-        arrayRegFiles(__tmp_193 + 2.U) := __tmp_194(23, 16)
-        arrayRegFiles(__tmp_193 + 3.U) := __tmp_194(31, 24)
-        arrayRegFiles(__tmp_193 + 4.U) := __tmp_194(39, 32)
-        arrayRegFiles(__tmp_193 + 5.U) := __tmp_194(47, 40)
-        arrayRegFiles(__tmp_193 + 6.U) := __tmp_194(55, 48)
-        arrayRegFiles(__tmp_193 + 7.U) := __tmp_194(63, 56)
+        val __tmp_1839 = generalRegFiles(0.U) + 12.U + 5.U.asUInt * 8.U
+        val __tmp_1840 = (generalRegFiles(5.U)).asUInt
+        arrayRegFiles(__tmp_1839 + 0.U) := __tmp_1840(7, 0)
+        arrayRegFiles(__tmp_1839 + 1.U) := __tmp_1840(15, 8)
+        arrayRegFiles(__tmp_1839 + 2.U) := __tmp_1840(23, 16)
+        arrayRegFiles(__tmp_1839 + 3.U) := __tmp_1840(31, 24)
+        arrayRegFiles(__tmp_1839 + 4.U) := __tmp_1840(39, 32)
+        arrayRegFiles(__tmp_1839 + 5.U) := __tmp_1840(47, 40)
+        arrayRegFiles(__tmp_1839 + 6.U) := __tmp_1840(55, 48)
+        arrayRegFiles(__tmp_1839 + 7.U) := __tmp_1840(63, 56)
 
         CP := 30.U
       }
