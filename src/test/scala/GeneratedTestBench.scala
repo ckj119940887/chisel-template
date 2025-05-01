@@ -1031,12 +1031,21 @@ class GeneratedPipelineTestBench extends AnyFlatSpec with ChiselScalatestTester 
 
       dut.io.inVec(0).bits.a.poke(1.U(64.W))
       dut.io.inVec(0).bits.b.poke(2.U(64.W))
+      dut.io.inVec(0).bits.bypassA.poke(false.B)
+      dut.io.inVec(0).bits.bypassB.poke(false.B)
+      dut.io.inVec(0).bits.bypassAIndex.poke(0.U)
+      dut.io.inVec(0).bits.bypassBIndex.poke(0.U)
       dut.io.inVec(0).valid.poke(true.B)
       dut.clock.step()
-      dut.io.inVec(0).bits.a.poke(3.U(64.W))
+
       dut.io.inVec(0).bits.b.poke(4.U(64.W))
+      dut.io.inVec(0).bits.bypassA.poke(true.B)
+      dut.io.inVec(0).bits.bypassB.poke(false.B)
+      dut.io.inVec(0).bits.bypassAIndex.poke(0.U)
+      dut.io.inVec(0).bits.bypassBIndex.poke(0.U)
       dut.io.inVec(0).valid.poke(true.B)
       dut.clock.step()
+
       dut.io.inVec(0).bits.a.poke(5.U(64.W))
       dut.io.inVec(0).bits.b.poke(6.U(64.W))
       dut.io.inVec(0).valid.poke(true.B)
