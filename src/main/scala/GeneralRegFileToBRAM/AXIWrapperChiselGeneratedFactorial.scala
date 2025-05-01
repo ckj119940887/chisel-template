@@ -4,13 +4,12 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental._
 
-class AXIWrapperChiselGeneratedFactorial(val C_S_AXI_ADDR_WIDTH: Int = 32, 
-                                              val C_S_AXI_DATA_WIDTH: Int = 32,
-                                              val ARRAY_REG_WIDTH: Int = 8,
-                                              val ARRAY_REG_DEPTH: Int = 1024,
-                                              val GENERAL_REG_WIDTH: Int = 64,
-                                              val GENERAL_REG_DEPTH: Int = 64,
-                                              val NUM_STATES: Int = 10) extends Module {
+class AXIWrapperChiselGeneratedFactorial(val C_S_AXI_DATA_WIDTH:  Int = 32,
+                                         val C_S_AXI_ADDR_WIDTH:  Int = 32,
+                                         val ARRAY_REG_WIDTH:     Int = 8,
+                                         val ARRAY_REG_DEPTH:     Int = 176,
+                                         val STACK_POINTER_WIDTH: Int = 16,
+                                         val CODE_POINTER_WIDTH:  Int = 16)  extends Module {
     val io = IO(new Bundle{
         // write address channel
         val S_AXI_AWADDR  = Input(UInt(C_S_AXI_ADDR_WIDTH.W))
@@ -78,37 +77,35 @@ class AXIWrapperChiselGeneratedFactorial(val C_S_AXI_ADDR_WIDTH: Int = 32,
 
     // Registers for target module port
     val io_valid_reg = Reg(UInt(32.W))
-    val io_ready_reg = Reg(Bool())
+    val io_ready_reg = Reg(UInt(32.W))
 
     // instantiate the target module
-    val arrayReadAddrValid = (axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) + 3.U) < ARRAY_REG_DEPTH.U
-    val arrayWriteAddrValid = (axi_awaddr(log2Ceil(ARRAY_REG_DEPTH), 0) + 3.U) < ARRAY_REG_DEPTH.U
+    val arrayReadAddrValid = (axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) >= 8.U) && ((axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) + 3.U) < (ARRAY_REG_DEPTH.U + 8.U))
+    val arrayWriteAddrValid = (axi_awaddr(log2Ceil(ARRAY_REG_DEPTH), 0) >= 8.U) && ((axi_awaddr(log2Ceil(ARRAY_REG_DEPTH), 0) + 3.U) < (ARRAY_REG_DEPTH.U + 8.U))
     val arrayWriteValid = slv_reg_wren & arrayWriteAddrValid
     val arrayReadValid = arrayReadAddrValid & axi_arready & io.S_AXI_ARVALID & ~axi_rvalid
-    val arrayReady = axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) === (ARRAY_REG_DEPTH * ARRAY_REG_WIDTH / 8 + (C_S_AXI_DATA_WIDTH/8)).U
-    val modFactorial = Module(new factorial (C_S_AXI_DATA_WIDTH  = 32,
-                                             C_S_AXI_ADDR_WIDTH  = 32,
-                                             ARRAY_REG_WIDTH     = 8,
-                                             ARRAY_REG_DEPTH     = 1024,
-                                             GENERAL_REG_WIDTH   = 64,
-                                             GENERAL_REG_DEPTH   = 5,
-                                             STACK_POINTER_WIDTH = 16,
-                                             CODE_POINTER_WIDTH  = 8))
-    modFactorial.io.valid := io_valid_reg(0)
+    val arrayReady = axi_araddr(log2Ceil(ARRAY_REG_DEPTH), 0) === 4.U
+    val modFactorial = Module(new FactorialTest(C_S_AXI_DATA_WIDTH  = C_S_AXI_DATA_WIDTH , 
+                                                C_S_AXI_ADDR_WIDTH  = C_S_AXI_ADDR_WIDTH , 
+                                                ARRAY_REG_WIDTH     = ARRAY_REG_WIDTH    , 
+                                                ARRAY_REG_DEPTH     = ARRAY_REG_DEPTH    , 
+                                                STACK_POINTER_WIDTH = STACK_POINTER_WIDTH, 
+                                                CODE_POINTER_WIDTH  = CODE_POINTER_WIDTH  ))
+    modFactorial.io.valid := Mux(io_valid_reg(0) & (io_ready_reg === 2.U), true.B, false.B)
     io_ready_reg := modFactorial.io.ready
     modFactorial.io.arrayRe := arrayReadValid 
     modFactorial.io.arrayWe := arrayWriteValid
     modFactorial.io.arrayStrb := Mux(arrayWriteValid, io.S_AXI_WSTRB, 0.U)
     modFactorial.io.arrayWriteAddr := Mux(arrayWriteValid, 
-                                                    Cat(axi_awaddr(log2Ceil(ARRAY_REG_DEPTH) - 1, ADDR_LSB), 0.U(ADDR_LSB.W)), 
+                                                    Cat(axi_awaddr(log2Ceil(ARRAY_REG_DEPTH) - 1, ADDR_LSB), 0.U(ADDR_LSB.W)) - 8.U, 
                                                     0.U)
     modFactorial.io.arrayReadAddr  := Mux(arrayReadValid, 
-                                                    Cat(axi_araddr(log2Ceil(ARRAY_REG_DEPTH) - 1, ADDR_LSB), 0.U(ADDR_LSB.W)), 
+                                                    Cat(axi_araddr(log2Ceil(ARRAY_REG_DEPTH) - 1, ADDR_LSB), 0.U(ADDR_LSB.W)) - 8.U, 
                                                     0.U)
     modFactorial.io.arrayWData := Mux(arrayWriteValid, io.S_AXI_WDATA.asUInt, 0.U)
     
     when(arrayReady) {
-        reg_data_out := Cat(0.U, io_ready_reg.asUInt).asSInt
+        reg_data_out := io_ready_reg.asSInt
     } .elsewhen(arrayReadValid) {
         reg_data_out := modFactorial.io.arrayRData.asSInt
     } .otherwise {
@@ -116,9 +113,9 @@ class AXIWrapperChiselGeneratedFactorial(val C_S_AXI_ADDR_WIDTH: Int = 32,
     }
 
     when(lowActiveReset.asBool) {
-        io_ready_reg := false.B
+        io_ready_reg := 0.U
     } .otherwise {
-        io_ready_reg := Mux(modFactorial.io.ready === 1.U, true.B, io_ready_reg)
+        io_ready_reg := modFactorial.io.ready
     }
 
     // I/O Connections assignments
@@ -199,7 +196,7 @@ class AXIWrapperChiselGeneratedFactorial(val C_S_AXI_ADDR_WIDTH: Int = 32,
     when(lowActiveReset.asBool) {
         io_valid_reg := 0.U
     } .otherwise {
-        when(slv_reg_wren && writeEffectiveAddr === (ARRAY_REG_DEPTH * ARRAY_REG_WIDTH / 8).U) {
+        when(slv_reg_wren && writeEffectiveAddr === 0.U) {
                 io_valid_reg := io.S_AXI_WDATA.asUInt
         }
     }
