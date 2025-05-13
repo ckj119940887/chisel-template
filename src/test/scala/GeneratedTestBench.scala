@@ -949,8 +949,8 @@ class GeneratedDivisionTestBench extends AnyFlatSpec with ChiselScalatestTester 
         dut.clock.step()
       }
 
-      dut.io.a.poke(-127.S(64.W))
-      dut.io.b.poke(-31.S(64.W))
+      dut.io.a.poke(127.U(64.W))
+      dut.io.b.poke(31.U(64.W))
       dut.io.start.poke(true.B)
 
       for(i <- 0 until 100) {
@@ -960,8 +960,8 @@ class GeneratedDivisionTestBench extends AnyFlatSpec with ChiselScalatestTester 
       dut.io.start.poke(false.B)
       dut.clock.step()
 
-      dut.io.a.poke(127.S(64.W))
-      dut.io.b.poke(31.S(64.W))
+      dut.io.a.poke(15.U(64.W))
+      dut.io.b.poke(3.U(64.W))
       dut.io.start.poke(true.B)
 
       for(i <- 0 until 100) {

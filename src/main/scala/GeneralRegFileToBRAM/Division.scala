@@ -6,12 +6,12 @@ import chisel3.experimental._
 
 class PipelinedDivMod(val width: Int) extends Module {
   val io = IO(new Bundle {
-    val a = Input(SInt(width.W))
-    val b = Input(SInt(width.W))
+    val a = Input(UInt(width.W))
+    val b = Input(UInt(width.W))
     val start = Input(Bool())   // 触发计算
     val valid = Output(Bool())  // 计算完成信号
-    val quotient = Output(SInt(width.W))
-    val remainder = Output(SInt(width.W))
+    val quotient = Output(UInt(width.W))
+    val remainder = Output(UInt(width.W))
   })
 
   val a_neg = io.a(width-1)
@@ -52,7 +52,7 @@ class PipelinedDivMod(val width: Int) extends Module {
     }
   }
 
-  io.quotient := Mux(a_neg ^ b_neg, -quotient, quotient).asSInt
-  io.remainder := Mux(a_neg, -remainder, remainder).asSInt
+  io.quotient := Mux(a_neg ^ b_neg, -quotient, quotient)
+  io.remainder := Mux(a_neg, -remainder, remainder)
   io.valid := count === 0.U //!busy
 }
