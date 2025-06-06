@@ -1057,3 +1057,166 @@ class GeneratedPipelineTestBench extends AnyFlatSpec with ChiselScalatestTester 
     }
   }
 }
+
+class Generated3CycleAdderTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "Generated3CycleAdderTestBench" should "work" in {
+    test(new ThreeCycleAdder(64)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      dut.io.a.poke(1.U(64.W))
+      dut.io.b.poke(2.U(64.W))
+      dut.io.start.poke(true.B)
+
+      dut.clock.step()
+      dut.io.a.poke(4.U(64.W))
+      dut.io.b.poke(4.U(64.W))
+      dut.clock.step()
+      dut.io.start.poke(false.B)
+      dut.clock.step()
+      dut.clock.step()
+      dut.io.a.poke(5.U(64.W))
+      dut.io.b.poke(5.U(64.W))
+      dut.io.start.poke(true.B)
+
+
+      for (i <- 0 until (10)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class TestNegativeTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "TestNegativeTestBench" should "work" in {
+    test(new TestNegative).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      dut.io.a.poke(7.U(4.W))
+
+      for (i <- 0 until (10)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class BRAMAddrCompTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "BRAMAddrCompTestBench" should "work" in {
+    test(new BRAMAddrComp(16)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      dut.io.addr.poke(7.U(16.W))
+      dut.io.offset.poke(2.U(16.W))
+      dut.io.isWrite.poke(true.B)
+      dut.io.writeLen.poke(4.U)
+      dut.io.start.poke(true.B)
+      dut.clock.step(5)
+
+      dut.io.start.poke(false.B)
+      dut.io.isWrite.poke(false.B)
+      dut.clock.step()
+
+      // dut.io.addr.poke(16.U(16.W))
+      // dut.io.offset.poke(0.U(16.W))
+      // dut.io.start.poke(true.B)
+      // dut.clock.step(5)
+
+      // dut.io.start.poke(false.B)
+      // dut.clock.step()
+
+      for (i <- 0 until (10)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class BRAMIPWrapperTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "BRAMIPWrapperTestBench" should "work" in {
+    test(new BRAMIPWrapper(depth = 1024, width = 64)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      /*
+      for(i <- 0 until 40) {
+          dut.io.mode.poke(2.U)
+          // dut.io.writeAddr.poke(i.U)
+          // dut.io.writeOffset.poke(1.U)
+          // dut.io.writeData.poke((i+1).U)
+          // dut.io.writeLen.poke(1.U)
+          dut.io.writeAddr.poke((i*8).U)
+          dut.io.writeOffset.poke(0.U)
+          dut.io.writeData.poke((i+1).U)
+          dut.io.writeLen.poke(1.U)
+          dut.clock.step(9)
+          dut.io.mode.poke(0.U)
+          dut.clock.step()
+      }
+
+      // read mode
+      for(i <- 0 until 5) {
+        dut.io.mode.poke(1.U)
+        dut.io.readAddr.poke((i*8).U)
+        dut.io.readOffset.poke(0.U)
+        // dut.io.readAddr.poke(i.U)
+        // dut.io.readOffset.poke(1.U)
+        dut.clock.step(7)
+        dut.io.mode.poke(0.U)
+        dut.clock.step()
+      }
+      */
+
+      dut.io.mode.poke(3.U)
+      dut.io.dmaSrcAddr.poke("h05".U)
+      dut.io.dmaDstAddr.poke("hF2".U)
+      dut.io.dmaLength.poke(20.U)
+      dut.clock.step(75)
+      dut.io.mode.poke(0.U)
+      dut.clock.step()
+
+      for(i <- 0 until 5) {
+        dut.io.mode.poke(1.U)
+        dut.io.readAddr.poke((0xF0 + i*8).U)
+        dut.io.readOffset.poke(0.U)
+        dut.clock.step(7)
+        dut.io.mode.poke(0.U)
+        dut.clock.step()
+      }
+
+      for (i <- 0 until (10)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}

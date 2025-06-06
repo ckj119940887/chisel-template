@@ -317,3 +317,36 @@ class WrongTestShift() extends Module {
 
     io.out := reg
 }
+
+class ThreeCycleAdder(val width: Int = 64) extends Module {
+    val io = IO(new Bundle{
+        val a = Input(UInt(width.W))
+        val b = Input(UInt(width.W))
+        val start = Input(Bool())
+        val out = Output(UInt(width.W))
+        val valid = Output(Bool())
+    })
+
+    val state = RegInit(0.U(2.W))
+    val regA = Reg(UInt(64.W))
+    val regB = Reg(UInt(64.W))
+    val result = Reg(UInt(64.W))
+
+    io.valid := Mux(state === 2.U, true.B, false.B)
+    io.out := Mux(state === 2.U, result, 0.U)
+
+    switch(state) {
+        is(0.U) {
+            state := Mux(io.start, 1.U, 0.U)
+            regA := Mux(io.start, io.a, regA)
+            regB := Mux(io.start, io.b, regB)
+        }
+        is(1.U) {
+            result := regA + regB 
+            state := 2.U
+        }
+        is(2.U) {
+            state := 0.U
+        }
+    }
+}
