@@ -517,7 +517,7 @@ class GeneratedShiftTestBench extends AnyFlatSpec with ChiselScalatestTester {
 
 class GeneratedMiscAndTestBench extends AnyFlatSpec with ChiselScalatestTester {
   "GeneratedMiscAndTestBench" should "work" in {
-    test(new AndSigned(64)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+    test(new AndUnsigned(64)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       dut.clock.setTimeout(3000)
 
       dut.reset.poke(true.B)
@@ -527,9 +527,12 @@ class GeneratedMiscAndTestBench extends AnyFlatSpec with ChiselScalatestTester {
       dut.reset.poke(false.B)
       dut.clock.step()
 
-      dut.io.a.poke((-41).S(64.W))
-      dut.io.b.poke((-42).S(64.W))
+      dut.io.a.poke(8.U(64.W))
+      dut.io.b.poke(15.U(64.W))
+      dut.io.start.poke(true.B)
       dut.clock.step()
+
+      dut.io.start.poke(false.B)
 
       dut.clock.step()
       dut.clock.step()
@@ -832,19 +835,10 @@ class GeneratedMiscTestBench extends AnyFlatSpec with ChiselScalatestTester {
       dut.io.elementSize.poke(3.U(16.W))
       dut.io.mask.poke("hFFFF".U)
       dut.io.ready.poke(true.B)
-      dut.clock.step()
-
-      dut.clock.step()
-      dut.clock.step()
-      dut.clock.step()
-      dut.clock.step()
-      dut.clock.step()
-
-      dut.io.baseOffset.poke(0.U(16.W))
-      dut.io.dataOffset.poke(0.U(16.W))
-      dut.io.index.poke(0.U(16.W))
-      dut.io.elementSize.poke(0.U(16.W))
-      dut.io.mask.poke("h0000".U)
+      dut.clock.step(20)
+      // while (!dut.io.valid.peek().litToBoolean) {
+      //   dut.clock.step(1)
+      // }
       dut.io.ready.poke(false.B)
       dut.clock.step()
 
@@ -854,13 +848,14 @@ class GeneratedMiscTestBench extends AnyFlatSpec with ChiselScalatestTester {
       dut.io.elementSize.poke(1.U(16.W))
       dut.io.mask.poke("hFFFF".U)
       dut.io.ready.poke(true.B)
+      dut.clock.step(20)
+      // while (!dut.io.valid.peek().litToBoolean) {
+      //   dut.clock.step(1)
+      // }
+      dut.io.ready.poke(false.B)
       dut.clock.step()
 
-      dut.clock.step()
-      dut.clock.step()
-      dut.clock.step()
-      dut.clock.step()
-      dut.clock.step()
+      dut.clock.step(50)
     }
   }
 }
@@ -1060,7 +1055,7 @@ class GeneratedPipelineTestBench extends AnyFlatSpec with ChiselScalatestTester 
 
 class Generated3CycleAdderTestBench extends AnyFlatSpec with ChiselScalatestTester {
   "Generated3CycleAdderTestBench" should "work" in {
-    test(new ThreeCycleAdder(64)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+    test(new IndexAdder(64)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       dut.clock.setTimeout(3000)
 
       dut.reset.poke(true.B)
@@ -1157,7 +1152,7 @@ class BRAMAddrCompTestBench extends AnyFlatSpec with ChiselScalatestTester {
 
 class BRAMIPWrapperTestBench extends AnyFlatSpec with ChiselScalatestTester {
   "BRAMIPWrapperTestBench" should "work" in {
-    test(new BRAMIPWrapper(depth = 1024, width = 64)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+    test(new BRAMIPWrapper(bramDepth = 1024, bramWidth = 8, portWidth = 32)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       dut.clock.setTimeout(3000)
 
       dut.reset.poke(true.B)
@@ -1166,6 +1161,60 @@ class BRAMIPWrapperTestBench extends AnyFlatSpec with ChiselScalatestTester {
       }
       dut.reset.poke(false.B)
       dut.clock.step()
+
+      // 1byte write mode
+      for(i <- 0 until 10) {
+          dut.io.mode.poke(2.U)
+          dut.io.writeAddr.poke((i*4).U)
+          dut.io.writeOffset.poke(0.U)
+          dut.io.writeData.poke("h08070605".U)
+          dut.io.writeLen.poke(4.U)
+          dut.clock.step(6)
+          dut.io.mode.poke(0.U)
+          dut.clock.step()
+      }
+
+      // 1byte read mode
+      for(i <- 0 until 40) {
+        dut.io.mode.poke(1.U)
+        dut.io.readAddr.poke(i.U)
+        dut.io.readOffset.poke(0.U)
+        dut.io.readLen.poke(1.U)
+        dut.clock.step(4)
+        // dut.io.readLen.poke((i+1).U)
+        // if(i == 0)
+        //   dut.clock.step(4)
+        // else
+        //   dut.clock.step(5+i)
+        dut.io.mode.poke(0.U)
+        dut.clock.step()
+      }
+
+      /*
+      // 1byte dma mode
+      dut.io.mode.poke(3.U)
+      dut.io.dmaSrcAddr.poke(0.U)
+      dut.io.dmaDstAddr.poke("hF0".U)
+      dut.io.dmaDstOffset.poke(0.U)
+      dut.io.dmaSrcLen.poke(20.U)
+      dut.io.dmaDstLen.poke(25.U)
+      dut.clock.step(22)
+      dut.io.mode.poke(0.U)
+      dut.clock.step()
+
+      // 1byte read 0ode
+      for(i <- 0 until 5) {
+        dut.io.mode.poke(1.U)
+        dut.io.readAddr.poke((0xF0+i*5).U)
+        dut.io.readOffset.poke(0.U)
+        dut.io.readLen.poke(5.U)
+        //dut.clock.step(11)
+        // dut.io.readLen.poke((i+1).U)
+        dut.clock.step(3+5)
+        dut.io.mode.poke(0.U)
+        dut.clock.step()
+      }
+      */
 
       /*
       for(i <- 0 until 40) {
@@ -1182,12 +1231,15 @@ class BRAMIPWrapperTestBench extends AnyFlatSpec with ChiselScalatestTester {
           dut.io.mode.poke(0.U)
           dut.clock.step()
       }
+      */
 
+      /*
       // read mode
       for(i <- 0 until 5) {
         dut.io.mode.poke(1.U)
-        dut.io.readAddr.poke((i*8).U)
+        dut.io.readAddr.poke((i*4).U)
         dut.io.readOffset.poke(0.U)
+        dut.io.readLen.poke(4.U)
         // dut.io.readAddr.poke(i.U)
         // dut.io.readOffset.poke(1.U)
         dut.clock.step(7)
@@ -1196,6 +1248,7 @@ class BRAMIPWrapperTestBench extends AnyFlatSpec with ChiselScalatestTester {
       }
       */
 
+      /*
       dut.io.mode.poke(3.U)
       dut.io.dmaSrcAddr.poke("h05".U)
       dut.io.dmaDstAddr.poke("hF2".U)
@@ -1212,8 +1265,630 @@ class BRAMIPWrapperTestBench extends AnyFlatSpec with ChiselScalatestTester {
         dut.io.mode.poke(0.U)
         dut.clock.step()
       }
+      */
 
       for (i <- 0 until (10)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class AXI4LiteSlaveTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "AXI4LiteSlaveTestBench" should "work" in {
+    test(new AXI4LiteSlave(C_S_AXI_DATA_WIDTH = 64, C_S_AXI_ADDR_WIDTH = 7)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(false.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(true.B)
+      dut.clock.step()
+
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(0.U)
+      dut.clock.step()
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h0f".U)
+      dut.io.S_AXI_WSTRB.poke("h01".U)
+      dut.clock.step()
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      while (!dut.io.S_AXI_BVALID.peek().litToBoolean) {
+        dut.clock.step(1)
+      }
+
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(0.U)
+      dut.clock.step(1)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(11)
+      // while (!dut.io.axi.r.valid.peek().litToBoolean) {
+      //   dut.clock.step(1)
+      // }
+
+      for (i <- 0 until (10)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class AXI4LiteSlaveBRAMIPTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "AXI4LiteSlaveBRAMIPTestBench" should "work" in {
+    test(new AXI4LiteSlaveBRAMIP(C_S_AXI_DATA_WIDTH = 64, C_S_AXI_ADDR_WIDTH = 11, depth = 1024)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(false.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(true.B)
+      dut.clock.step()
+
+      // write all FF to testNum
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(0.U)
+      dut.clock.step()
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("hFFFFFFFFFFFFFFFF".U)
+      dut.io.S_AXI_WSTRB.poke("hFF".U)
+      dut.clock.step()
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      while (!dut.io.S_AXI_BVALID.peek().litToBoolean) {
+        dut.clock.step(1)
+      }
+
+      // write valid
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(1024.U)
+      dut.clock.step()
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h01".U)
+      dut.io.S_AXI_WSTRB.poke("h01".U)
+      dut.clock.step()
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      while (!dut.io.S_AXI_BVALID.peek().litToBoolean) {
+        dut.clock.step(1)
+      }
+
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(1024.U)
+      dut.clock.step(1)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      while (!dut.io.S_AXI_RVALID.peek().litToBoolean) {
+        dut.clock.step(1)
+      }
+
+      /*
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(0.U)
+      dut.clock.step()
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h0f".U)
+      dut.io.S_AXI_WSTRB.poke("h01".U)
+      dut.clock.step()
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      while (!dut.io.S_AXI_BVALID.peek().litToBoolean) {
+        dut.clock.step(1)
+      }
+
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(0.U)
+      dut.clock.step(1)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      while (!dut.io.S_AXI_RVALID.peek().litToBoolean) {
+        dut.clock.step(1)
+      }
+      */
+
+      for (i <- 0 until (10)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class AXI4LiteSlaveStateMachineTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "AXI4LiteSlaveStateMachineTestBench" should "work" in {
+    test(new AXI4LiteSlaveStateMachine(C_S_AXI_DATA_WIDTH = 32, C_S_AXI_ADDR_WIDTH = 11, bramDepth = 1024)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      // write 1st FFFFFFFF to testNum
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(0.U)
+      dut.clock.step()
+      dut.clock.step()
+      // while (!(dut.io.S_AXI_AWVALID.peek().litToBoolean & dut.io.S_AXI_AWREADY.peek().litToBoolean)) {
+      //   dut.clock.step(1)
+      // }
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("hFFFFFFFF".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step()
+      dut.clock.step()
+      // while (!(dut.io.S_AXI_WVALID.peek().litToBoolean & dut.io.S_AXI_WREADY.peek().litToBoolean)) {
+      //   dut.clock.step(1)
+      // }
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(6)
+      // while (!(dut.io.S_AXI_BVALID.peek().litToBoolean & dut.io.S_AXI_BREADY.peek().litToBoolean)) {
+      //   dut.clock.step(1)
+      // }
+
+      // write 2nd FFFFFFFF to testNum
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(4.U)
+      dut.clock.step()
+      dut.clock.step()
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("hFFFFFFFF".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step()
+      dut.clock.step()
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(6)
+
+      // read 1st testNum
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(0.U)
+      dut.clock.step(1)
+      dut.clock.step(1)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(8)
+
+      // read 2nd testNum
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(4.U)
+      dut.clock.step(1)
+      dut.clock.step(1)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(8)
+
+      // write valid
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(1024.U)
+      dut.clock.step()
+      dut.clock.step()
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h01".U)
+      dut.io.S_AXI_WSTRB.poke("h1".U)
+      dut.clock.step()
+      dut.clock.step()
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(3)
+
+      dut.clock.step(20)
+
+      // read ready
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(1024.U)
+      dut.clock.step(1)
+      dut.clock.step(1)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(7)
+
+      for (i <- 0 until (50)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class BlockMemoryOptimizedTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "BlockMemoryOptimizedTestBench" should "work" in {
+    test(new BlockMemoryOptimized(depth = 1024, width = 8)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      /*
+      // 1byte write mode
+      for(i <- 0 until 10) {
+          dut.io.mode.poke(2.U)
+          dut.io.writeAddr.poke((i*8).U)
+          dut.io.writeOffset.poke(0.U)
+          dut.io.writeData.poke("h100f0e0d0c0b0a09".U)
+          dut.io.writeLen.poke(8.U)
+          // dut.io.writeData.poke((i+2).U)
+          // dut.io.writeLen.poke(1.U)
+          //dut.clock.step(3)
+          dut.clock.step(17)
+          dut.io.mode.poke(0.U)
+          dut.clock.step()
+      }
+
+      // 1byte read mode
+      for(i <- 0 until 40) {
+        dut.io.mode.poke(1.U)
+        dut.io.readAddr.poke(i.U)
+        dut.io.readOffset.poke(0.U)
+        dut.io.readLen.poke(1.U)
+        dut.clock.step(4)
+        dut.io.mode.poke(0.U)
+        dut.clock.step()
+      }
+      */
+
+      // 1byte dma mode
+      dut.io.mode.poke(3.U)
+      dut.io.dmaSrcAddr.poke(0.U)
+      dut.io.dmaDstAddr.poke("hF0".U)
+      dut.io.dmaDstOffset.poke(0.U)
+      //dut.io.dmaSrcLen.poke(20.U)
+      dut.io.dmaSrcLen.poke(0.U)
+      // dut.io.dmaDstLen.poke(20.U)
+      // dut.clock.step(64)
+      dut.io.dmaDstLen.poke(25.U)
+      dut.clock.step(79)
+      dut.io.mode.poke(0.U)
+      dut.clock.step()
+
+      // 1byte read 0ode
+      for(i <- 0 until 5) {
+        dut.io.mode.poke(1.U)
+        dut.io.readAddr.poke((0xF0+i*8).U)
+        dut.io.readOffset.poke(0.U)
+        dut.io.readLen.poke(8.U)
+        dut.clock.step(33)
+        dut.io.mode.poke(0.U)
+        dut.clock.step()
+      }
+
+      /*
+      // 1byte read mode
+      for(i <- 0 until 20) {
+        dut.io.mode.poke(1.U)
+        dut.io.readAddr.poke(i.U)
+        dut.io.readOffset.poke(0.U)
+        dut.io.readLen.poke(1.U)
+        dut.clock.step(4)
+        dut.io.mode.poke(0.U)
+        dut.clock.step()
+      }
+      */
+
+      /*
+      // 4byte read mode
+      for(i <- 0 until 5) {
+        dut.io.mode.poke(1.U)
+        dut.io.readAddr.poke((i*4).U)
+        dut.io.readOffset.poke(0.U)
+        dut.io.readLen.poke(4.U)
+        // dut.io.readAddr.poke(i.U)
+        // dut.io.readOffset.poke(1.U)
+        dut.clock.step(17)
+        dut.io.mode.poke(0.U)
+        dut.clock.step()
+      }
+      */
+
+      /*
+      // 8byte read mode
+      for(i <- 0 until 5) {
+        dut.io.mode.poke(1.U)
+        dut.io.readAddr.poke((i*8).U)
+        dut.io.readOffset.poke(0.U)
+        dut.io.readLen.poke(8.U)
+        // dut.io.readAddr.poke(i.U)
+        // dut.io.readOffset.poke(1.U)
+        dut.clock.step(33)
+        dut.io.mode.poke(0.U)
+        dut.clock.step()
+      }
+      */
+
+      for (i <- 0 until (10)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class LabelToFSMTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "LabelToFSMTestBench" should "work" in {
+    test(new LabelToFSM(1227, 128)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      dut.io.start.poke(true.B)
+      dut.io.originalCpIndex.poke(2.U)
+      dut.io.label.poke(299.U)
+      dut.clock.step(3)
+
+      dut.io.start.poke(false.B)
+      dut.clock.step()
+      
+      dut.io.start.poke(true.B)
+      dut.io.originalCpIndex.poke(1.U)
+      dut.io.label.poke(300.U)
+      dut.clock.step(3)
+
+      dut.io.start.poke(false.B)
+      dut.clock.step()
+
+      for (i <- 0 until (10)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class CombinationalLoopTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "CombinationalLoopTestBench" should "work" in {
+    test(new CombinationalLoopWireRegNext()).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      dut.io.start.poke(true.B)
+      dut.io.in.poke(2.U)
+      dut.clock.step(10)
+
+      for (i <- 0 until (10)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class MultiStateMachineWithSignalTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "MultiStateMachineWithSignalTestBench" should "work" in {
+    test(new MultiStateMachineWithSignalSafe()).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      dut.io.start.poke(true.B)
+      dut.io.in.poke(2.U)
+      dut.clock.step(10)
+
+      for (i <- 0 until (100)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class BroadcastBufferTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "BroadcastBufferTestBench" should "work" in {
+    test(new BroadcastBuffer(new StateBundle, 4)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      // 设置初始 ready
+      for (i <- 0 until 4) {
+        dut.io.out(i).ready.poke(true.B)
+      }
+
+      // 输入一个 valid 信号
+      dut.io.in(1).valid.poke(true.B)
+      dut.io.in(1).bits.index.poke(2.U)
+      dut.io.in(1).bits.state.poke(99.U)
+
+      for (i <- Seq(0,2,3)) {
+        dut.io.in(i).valid.poke(false.B)
+      }
+
+      dut.clock.step(2)
+      dut.io.in(1).valid.poke(false.B)
+
+      // for (i <- 0 until 4) {
+      //   dut.io.out(i).valid.expect(true.B)
+      //   dut.io.out(i).bits.index.expect(2.U)
+      //   dut.io.out(i).bits.state.expect(99.U)
+      // }
+
+      for (i <- 0 until (100)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class MultiStateMachineWithBroadcastBufferTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "MultiStateMachineWithBroadcastBufferTestBench" should "work" in {
+    test(new MultiStateMachineWithBroadcastBuffer()).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      dut.io.start.poke(true.B)
+      dut.io.in.poke(2.U)
+      dut.clock.step(10)
+
+      for (i <- 0 until (100)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class AXI4LiteSlaveStateMachineRegTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "AXI4LiteSlaveStateMachineRegTestBench" should "work" in {
+    test(new AXI4LiteSlaveStateMachineReg(C_S_AXI_DATA_WIDTH = 32, C_S_AXI_ADDR_WIDTH = 11, bramDepth = 1024)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      // write 1st FFFFFFFF to testNum
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(0.U)
+      dut.clock.step()
+      dut.clock.step()
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("hFFFFFFFF".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step()
+      dut.clock.step()
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(7)
+
+      // write 2nd FFFFFFFF to testNum
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(4.U)
+      dut.clock.step()
+      dut.clock.step()
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("hFFFFFFFF".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step()
+      dut.clock.step()
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(7)
+
+      // read 1st testNum
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(0.U)
+      dut.clock.step(1)
+      dut.clock.step(1)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(8)
+
+      // read 2nd testNum
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(4.U)
+      dut.clock.step(1)
+      dut.clock.step(1)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(8)
+
+      // write valid
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(1024.U)
+      dut.clock.step()
+      dut.clock.step()
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h01".U)
+      dut.io.S_AXI_WSTRB.poke("h1".U)
+      dut.clock.step()
+      dut.clock.step()
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(3)
+
+      dut.clock.step(20)
+
+      // read ready
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(1024.U)
+      dut.clock.step(1)
+      dut.clock.step(1)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(7)
+
+      for (i <- 0 until (50)) {
         dut.clock.step()
       }
 

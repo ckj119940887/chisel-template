@@ -3,13 +3,13 @@ module XilinxBRAMWrapper(
     input wire ena,
     input wire wea,
     input wire [9:0] addra,
-    input wire [63:0] dina,
-    output wire [63:0] douta,
+    input wire [7:0] dina,
+    output wire [7:0] douta,
     input wire enb,
     input wire web,
     input wire [9:0] addrb,
-    input wire [63:0] dinb,
-    output wire [63:0] doutb
+    input wire [7:0] dinb,
+    output wire [7:0] doutb
 );
 
   XilinxBRAM u_XilinxBRAM (
@@ -17,14 +17,14 @@ module XilinxBRAMWrapper(
     .ena(ena),      // input wire ena
     .wea(wea),      // input wire [0 : 0] wea
     .addra(addra),  // input wire [9 : 0] addra
-    .dina(dina),    // input wire [63 : 0] dina
-    .douta(douta),  // output wire [63 : 0] douta
+    .dina(dina),    // input wire [7: 0] dina
+    .douta(douta),  // output wire [7: 0] douta
     .clkb(clk),    // input wire clkb
     .enb(enb),      // input wire enb
     .web(web),      // input wire [0 : 0] web
     .addrb(addrb),  // input wire [9 : 0] addrb
-    .dinb(dinb),    // input wire [63 : 0] dinb
-    .doutb(doutb)  // output wire [63 : 0] doutb
+    .dinb(dinb),    // input wire [7: 0] dinb
+    .doutb(doutb)  // output wire [7: 0] doutb
   );
 
 endmodule

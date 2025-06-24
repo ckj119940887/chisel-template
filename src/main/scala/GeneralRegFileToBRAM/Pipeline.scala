@@ -30,6 +30,7 @@ class Pipeline(val numOfComponents: Int = 2, val width: Int = 64) extends Module
     val andUnsigned = Module(new AndUnsigned(width))
     val modules = Seq(adderUnsigned.io, andUnsigned.io)
 
+    /*
     for(i <- 0 until numOfComponents) {
         modules(i).a := Mux(RegNext(io.inVec(i).bits.bypassA), results(io.inVec(i).bits.bypassAIndex), RegNext(io.inVec(i).bits.a))
         modules(i).b := Mux(RegNext(io.inVec(i).bits.bypassB), results(io.inVec(i).bits.bypassBIndex), RegNext(io.inVec(i).bits.b))
@@ -39,4 +40,5 @@ class Pipeline(val numOfComponents: Int = 2, val width: Int = 64) extends Module
         io.outVec(i).ready := RegNext(RegNext(io.inVec(i).valid))
         io.outVec(i).out := RegNext(modules(i).out)
     }
+    */
 }

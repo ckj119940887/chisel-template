@@ -5,6 +5,7 @@ import chisel3.util._
 import chisel3.experimental._
 import chisel3.util.experimental.loadMemoryFromFile
 
+/*
 class SPAdderUnsigned(val width: Int = 16) extends Module {
     val io = IO(new Bundle{
         val a = Input(UInt(width.W))
@@ -14,15 +15,14 @@ class SPAdderUnsigned(val width: Int = 16) extends Module {
         val valid = Output(Bool())
     })
 
-    val adder = Module(new XilinxSPAdderUnsignedWrapper)
-    adder.io.clk := clock.asBool
-    adder.io.A := io.a
-    adder.io.B := io.b
-    adder.io.ce := io.start
-    io.valid := adder.io.valid
-    io.out := adder.io.S
+    // val adder = Module(new XilinxSPAdderUnsignedWrapper)
+    // adder.io.clk := clock.asBool
+    // adder.io.A := io.a
+    // adder.io.B := io.b
+    // adder.io.ce := io.start
+    // io.valid := adder.io.valid
+    // io.out := adder.io.S
 
-    /*
     val state = RegInit(0.U(2.W))
     val regA = Reg(UInt(width.W))
     val regB = Reg(UInt(width.W))
@@ -44,7 +44,6 @@ class SPAdderUnsigned(val width: Int = 16) extends Module {
             state := 0.U
         }
     }
-    */
 }
 
 class XilinxSPAdderUnsignedWrapper extends BlackBox with HasBlackBoxResource {
@@ -69,15 +68,14 @@ class SPAdderUnsigned8bit extends Module {
         val valid = Output(Bool())
     })
 
-    val adder = Module(new XilinxSPAdderUnsigned8bitWrapper)
-    adder.io.clk := clock.asBool
-    adder.io.A := io.a
-    adder.io.B := io.b
-    adder.io.ce := io.start
-    io.valid := adder.io.valid
-    io.out := adder.io.S
+    // val adder = Module(new XilinxSPAdderUnsigned8bitWrapper)
+    // adder.io.clk := clock.asBool
+    // adder.io.A := io.a
+    // adder.io.B := io.b
+    // adder.io.ce := io.start
+    // io.valid := adder.io.valid
+    // io.out := adder.io.S
 
-    /*
     val state = RegInit(0.U(1.W))
     val result = Reg(UInt(8.W))
 
@@ -92,7 +90,6 @@ class SPAdderUnsigned8bit extends Module {
             state := 0.U
         }
     }
-    */
 }
 
 class XilinxSPAdderUnsigned8bitWrapper extends BlackBox with HasBlackBoxResource {
@@ -117,15 +114,14 @@ class SPSubtractorUnsigned(val width: Int = 16) extends Module {
         val valid = Output(Bool())
     })
 
-    val adder = Module(new XilinxSPSubtractorUnsignedWrapper)
-    adder.io.clk := clock.asBool
-    adder.io.A := io.a
-    adder.io.B := io.b
-    adder.io.ce := io.start
-    io.valid := adder.io.valid
-    io.out := adder.io.S
+    // val adder = Module(new XilinxSPSubtractorUnsignedWrapper)
+    // adder.io.clk := clock.asBool
+    // adder.io.A := io.a
+    // adder.io.B := io.b
+    // adder.io.ce := io.start
+    // io.valid := adder.io.valid
+    // io.out := adder.io.S
 
-    /*
     val state = RegInit(0.U(2.W))
     val regA = Reg(UInt(width.W))
     val regB = Reg(UInt(width.W))
@@ -147,7 +143,6 @@ class SPSubtractorUnsigned(val width: Int = 16) extends Module {
             state := 0.U
         }
     }
-    */
 }
 
 class XilinxSPSubtractorUnsignedWrapper extends BlackBox with HasBlackBoxResource {
@@ -171,14 +166,13 @@ class SPAdderConstant1(val width: Int = 16) extends Module {
         val valid = Output(Bool())
     })
 
-    val adder = Module(new XilinxSPAdderConstant1Wrapper)
-    adder.io.clk := clock.asBool
-    adder.io.A := io.a
-    adder.io.ce := io.start
-    io.valid := adder.io.valid
-    io.out := adder.io.S
+    // val adder = Module(new XilinxSPAdderConstant1Wrapper)
+    // adder.io.clk := clock.asBool
+    // adder.io.A := io.a
+    // adder.io.ce := io.start
+    // io.valid := adder.io.valid
+    // io.out := adder.io.S
 
-    /*
     val state = RegInit(0.U(2.W))
     val regA = Reg(UInt(width.W))
     val result = Reg(UInt(width.W))
@@ -198,7 +192,6 @@ class SPAdderConstant1(val width: Int = 16) extends Module {
             state := 0.U
         }
     }
-    */
 }
 
 class XilinxSPAdderConstant1Wrapper extends BlackBox with HasBlackBoxResource {
@@ -358,10 +351,10 @@ class BRAMIPWrapper(val depth: Int = 1024, val width: Int = 64) extends Module {
     val dmaValid     = Output(Bool())
   })
 
-  //val bram = Module(new BRAMIP(depth, 64))
+  val bram = Module(new BRAMIP(depth, 64))
 
-  val bram = Module(new XilinxBRAMWrapper)
-  bram.io.clk := clock.asBool
+  // val bram = Module(new XilinxBRAMWrapper)
+  // bram.io.clk := clock.asBool
 
   // BRAM default
   bram.io.ena := false.B
@@ -628,3 +621,4 @@ class BRAMIPWrapper(val depth: Int = 1024, val width: Int = 64) extends Module {
     }
   }
 }
+*/
