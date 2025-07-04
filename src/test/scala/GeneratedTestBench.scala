@@ -1809,60 +1809,53 @@ class AXI4LiteSlaveStateMachineRegTestBench extends AnyFlatSpec with ChiselScala
       dut.io.S_AXI_AWVALID.poke(true.B)
       dut.io.S_AXI_AWADDR.poke(0.U)
       dut.clock.step()
-      dut.clock.step()
 
       dut.io.S_AXI_AWVALID.poke(false.B)
       dut.io.S_AXI_WVALID.poke(true.B)
       dut.io.S_AXI_WDATA.poke("hFFFFFFFF".U)
       dut.io.S_AXI_WSTRB.poke("hF".U)
-      dut.clock.step()
-      dut.clock.step()
+      dut.clock.step(2)
 
       dut.io.S_AXI_WVALID.poke(false.B)
       dut.io.S_AXI_BREADY.poke(true.B)
-      dut.clock.step(7)
+      dut.clock.step(10)
 
       // write 2nd FFFFFFFF to testNum
       dut.io.S_AXI_AWVALID.poke(true.B)
       dut.io.S_AXI_AWADDR.poke(4.U)
       dut.clock.step()
-      dut.clock.step()
 
       dut.io.S_AXI_AWVALID.poke(false.B)
       dut.io.S_AXI_WVALID.poke(true.B)
       dut.io.S_AXI_WDATA.poke("hFFFFFFFF".U)
       dut.io.S_AXI_WSTRB.poke("hF".U)
-      dut.clock.step()
-      dut.clock.step()
+      dut.clock.step(2)
 
       dut.io.S_AXI_WVALID.poke(false.B)
       dut.io.S_AXI_BREADY.poke(true.B)
-      dut.clock.step(7)
+      dut.clock.step(10)
 
       // read 1st testNum
       dut.io.S_AXI_ARVALID.poke(true.B)
       dut.io.S_AXI_ARADDR.poke(0.U)
       dut.clock.step(1)
-      dut.clock.step(1)
 
       dut.io.S_AXI_ARVALID.poke(false.B)
       dut.io.S_AXI_RREADY.poke(true.B)
-      dut.clock.step(8)
+      dut.clock.step(12)
 
       // read 2nd testNum
       dut.io.S_AXI_ARVALID.poke(true.B)
       dut.io.S_AXI_ARADDR.poke(4.U)
       dut.clock.step(1)
-      dut.clock.step(1)
 
       dut.io.S_AXI_ARVALID.poke(false.B)
       dut.io.S_AXI_RREADY.poke(true.B)
-      dut.clock.step(8)
+      dut.clock.step(12)
 
       // write valid
       dut.io.S_AXI_AWVALID.poke(true.B)
       dut.io.S_AXI_AWADDR.poke(1024.U)
-      dut.clock.step()
       dut.clock.step()
 
       dut.io.S_AXI_AWVALID.poke(false.B)
@@ -1874,7 +1867,7 @@ class AXI4LiteSlaveStateMachineRegTestBench extends AnyFlatSpec with ChiselScala
 
       dut.io.S_AXI_WVALID.poke(false.B)
       dut.io.S_AXI_BREADY.poke(true.B)
-      dut.clock.step(3)
+      dut.clock.step(4)
 
       dut.clock.step(20)
 
@@ -1882,11 +1875,283 @@ class AXI4LiteSlaveStateMachineRegTestBench extends AnyFlatSpec with ChiselScala
       dut.io.S_AXI_ARVALID.poke(true.B)
       dut.io.S_AXI_ARADDR.poke(1024.U)
       dut.clock.step(1)
-      dut.clock.step(1)
 
       dut.io.S_AXI_ARVALID.poke(false.B)
       dut.io.S_AXI_RREADY.poke(true.B)
-      dut.clock.step(7)
+      dut.clock.step(10)
+
+      for (i <- 0 until (50)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class AXI4LiteSlaveStateMachineWithoutBRAMTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "AXI4LiteSlaveStateMachineWithoutBRAMTestBench" should "work" in {
+    test(new AXI4LiteSlaveStateMachineWithoutBRAM(C_S_AXI_DATA_WIDTH = 32, C_S_AXI_ADDR_WIDTH = 11)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(false.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(true.B)
+      dut.clock.step()
+
+      // write 1 to valid 
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(0.U)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h01".U)
+      dut.io.S_AXI_WSTRB.poke("h1".U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // write 8 to ready 
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(4.U)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h08".U)
+      dut.io.S_AXI_WSTRB.poke("h1".U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(2)
+
+      // read valid 
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(0.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // read ready
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(4.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step()
+
+      for (i <- 0 until (50)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class AXI4LiteMasterSlaveTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "AXI4LiteMasterSlaveTestBench" should "work" in {
+    test(new AXI4_Master_Slave()).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(false.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(true.B)
+      dut.clock.step()
+
+      for (i <- 0 until (100)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class AXI4LiteMasterSlave_AXIDMA_TestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "AXI4LiteMasterSlave_AXIDMA_TestBench " should "work" in {
+    test(new AXI4LiteMasterSlave_AXIDMA(C_S_AXI_DATA_WIDTH = 32, C_S_AXI_ADDR_WIDTH = 11, BASE_MEM_ADDR = 0xA0000000)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(false.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(true.B)
+      dut.clock.step()
+
+      // write to MM2S_SA
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(0.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h0".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // write to MM2S_LENGTH
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(4.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h00000040".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // write to S2MM_SA
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(8.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h100".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // write to S2MM_LENGTH
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(12.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h40".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // write to MM2S_DMACR
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(16.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h1001".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // write to S2MM_DMACR
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(20.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h1001".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // write to control
+      dut.io.S_AXI_AWVALID.poke(true.B)
+      dut.io.S_AXI_AWADDR.poke(24.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_AWVALID.poke(false.B)
+      dut.io.S_AXI_WVALID.poke(true.B)
+      dut.io.S_AXI_WDATA.poke("h1".U)
+      dut.io.S_AXI_WSTRB.poke("hF".U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_WVALID.poke(false.B)
+      dut.io.S_AXI_BREADY.poke(true.B)
+      dut.clock.step(3)
+
+      /***********AXI4 Lite Slave read logic****************/
+      // read MM2S_SA
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(0.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // read MM2S_LENGTH
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(4.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // read S2MM_DA
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(8.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // read S2MM_LENGTH
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(12.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // read MM2S_DMACR
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(16.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // read S2MM_DMACR
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(20.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(3)
+
+      // read control
+      dut.io.S_AXI_ARVALID.poke(true.B)
+      dut.io.S_AXI_ARADDR.poke(24.U)
+      dut.clock.step(2)
+
+      dut.io.S_AXI_ARVALID.poke(false.B)
+      dut.io.S_AXI_RREADY.poke(true.B)
+      dut.clock.step(3)
 
       for (i <- 0 until (50)) {
         dut.clock.step()
