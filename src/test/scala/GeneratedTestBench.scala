@@ -1892,7 +1892,7 @@ class AXI4LiteSlaveStateMachineWithoutBRAMTestBench extends AnyFlatSpec with Chi
   "AXI4LiteSlaveStateMachineWithoutBRAMTestBench" should "work" in {
     test(new AXI4LiteSlaveStateMachineWithoutBRAM(C_S_AXI_DATA_WIDTH = 32, C_S_AXI_ADDR_WIDTH = 11)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
       dut.clock.setTimeout(3000)
-
+      
       dut.reset.poke(false.B)
       for (i <- 0 until (5)) {
         dut.clock.step()
@@ -2154,6 +2154,51 @@ class AXI4LiteMasterSlave_AXIDMA_TestBench extends AnyFlatSpec with ChiselScalat
       dut.clock.step(3)
 
       for (i <- 0 until (50)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class RecursiveFactorialTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "RecursiveFactorialTestBench" should "work" in {
+    test(new RecursiveFactorial(width = 8, depth = 1024)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      dut.io.n.poke(3.U)
+      dut.io.start.poke(true.B)
+
+      for (i <- 0 until (100)) {
+        dut.clock.step()
+      }
+
+    }
+  }
+}
+
+class BigBoxTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "BigBoxTestBench" should "work" in {
+    test(new BigBox()).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      dut.io.out.ready.poke(true.B)
+
+      for (i <- 0 until (100)) {
         dut.clock.step()
       }
 

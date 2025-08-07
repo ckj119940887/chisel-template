@@ -40,7 +40,7 @@ object TestWhenVerilogGeneration extends App {
 object AXI4LiteSlaveStateMachineWithoutBRAMVerilogGeneration extends App {  
   (new ChiselStage).execute(
     Array("--target-dir", "generated_verilog"),
-    Seq(ChiselGeneratorAnnotation(() => new AXI4LiteSlaveStateMachineWithoutBRAM(C_S_AXI_DATA_WIDTH = 32, C_S_AXI_ADDR_WIDTH = 10)))
+    Seq(ChiselGeneratorAnnotation(() => new AXI4LiteSlaveStateMachineWithoutBRAM(C_S_AXI_DATA_WIDTH = 64, C_S_AXI_ADDR_WIDTH = 32)))
   )
 }
 
@@ -61,6 +61,16 @@ object AXI4FullMaster_VerilogGeneration extends App {
   )
 }
 
+object AXI4FullMasterSimplified_VerilogGeneration extends App {  
+  (new ChiselStage).execute(
+    Array("--target-dir", "generated_verilog"),
+    Seq(ChiselGeneratorAnnotation(() => new AXI4FullMasterSimplified(C_M_AXI_DATA_WIDTH = 64, 
+                                                                     C_M_AXI_ADDR_WIDTH = 32, 
+                                                                     C_M_TARGET_SLAVE_BASE_ADDR = BigInt("A0000000", 16),
+                                                                     MEMORY_DEPTH = 1024)))
+  )
+}
+
 object AXI4LiteSlaveDDR4_VerilogGeneration extends App {  
   (new ChiselStage).execute(
     Array("--target-dir", "generated_verilog"),
@@ -68,5 +78,15 @@ object AXI4LiteSlaveDDR4_VerilogGeneration extends App {
                                                               C_S_AXI_ADDR_WIDTH = 32,
                                                               C_M_AXI_DATA_WIDTH = 64,
                                                               C_M_AXI_ADDR_WIDTH = 49)))
+  )
+}
+
+object AXI4LiteSlaveDDR4Simplified_VerilogGeneration extends App {  
+  (new ChiselStage).execute(
+    Array("--target-dir", "generated_verilog"),
+    Seq(ChiselGeneratorAnnotation(() => new AXI4LiteSlaveDDR4Simplified(C_S_AXI_DATA_WIDTH = 64, 
+                                                                        C_S_AXI_ADDR_WIDTH = 32,
+                                                                        C_M_AXI_DATA_WIDTH = 64,
+                                                                        C_M_AXI_ADDR_WIDTH = 49)))
   )
 }
