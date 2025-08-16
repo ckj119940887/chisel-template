@@ -13,8 +13,6 @@ class FactorialStackData(val addrWidth: Int, val idWidth: Int, val cpWidth: Int,
 
 class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth: Int) extends Module{
   val io = IO(new Bundle{
-    val start    = Input(Bool())
-    val valid    = Output(Bool())
     val req      = Valid(new RequestBundle(addrWidth, dataWidth))
     val resp     = Flipped(Valid(new ResponseBundle(dataWidth)))
     val routeIn  = Flipped(Valid(new Packet(idWidth, dataWidth, cpWidth)))
@@ -35,8 +33,6 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
   r_stack_dataOut  := stack.io.dataOut
   r_stack_valid    := stack.io.valid
 
-  val r_start          = RegNext(io.start)
-  val r_valid          = RegInit(false.B)
   val r_req            = Reg(new RequestBundle(addrWidth, dataWidth))
   val r_req_valid      = RegInit(false.B)
   val r_resp           = Reg(new ResponseBundle(dataWidth))
@@ -57,7 +53,7 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
   r_resp_valid      := io.resp.valid
   io.req.bits       := r_req
   io.req.valid      := r_req_valid
-  io.valid          := r_valid
+
   r_routeIn         := io.routeIn.bits
   r_routeIn_valid   := io.routeIn.valid
   io.routeOut.bits  := r_routeOut
@@ -70,11 +66,8 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
 
   switch(factorialCP) {
     is(0.U) {
-        r_valid          := false.B
         r_routeOut_valid := false.B
-        when(r_start) {
-            factorialCP := 1.U
-        } .elsewhen(r_routeIn_valid) {
+        when(r_routeIn_valid) {
             r_srcCP     := r_routeIn.srcCP
             r_srcID     := r_routeIn.srcID
             factorialCP := r_routeIn.dstCP
@@ -200,7 +193,11 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
         factorialCP := Mux(r_srcID === 0.U, 16.U, 17.U)
     }
     is(16.U) {
-        r_valid     := true.B
+        r_routeOut.srcID := 1.U
+        r_routeOut.srcCP := 0.U
+        r_routeOut.dstID := r_srcID
+        r_routeOut.dstCP := r_srcCP
+        r_routeOut_valid := true.B
         factorialCP := 0.U
 
         // initialize srcID and srcCP to default value

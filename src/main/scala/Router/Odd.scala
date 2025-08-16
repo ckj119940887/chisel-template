@@ -6,8 +6,6 @@ import chisel3.experimental._
 
 class Odd(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth: Int) extends Module{
   val io = IO(new Bundle{
-    val start    = Input(Bool())
-    val valid    = Output(Bool())
     val req      = Valid(new RequestBundle(addrWidth, dataWidth))
     val resp     = Flipped(Valid(new ResponseBundle(dataWidth)))
     val routeIn  = Flipped(Valid(new Packet(idWidth, dataWidth, cpWidth)))
@@ -28,8 +26,6 @@ class Odd(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth
   r_stack_dataOut := stack.io.dataOut
   r_stack_valid   := stack.io.valid
 
-  val r_start          = RegNext(io.start)
-  val r_valid          = RegInit(false.B)
   val r_req            = Reg(new RequestBundle(addrWidth, dataWidth))
   val r_req_valid      = RegInit(false.B)
   val r_resp           = Reg(new ResponseBundle(dataWidth))
@@ -50,7 +46,7 @@ class Odd(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth
   r_resp_valid      := io.resp.valid
   io.req.bits       := r_req
   io.req.valid      := r_req_valid
-  io.valid          := r_valid
+  
   r_routeIn         := io.routeIn.bits
   r_routeIn_valid   := io.routeIn.valid
   io.routeOut.bits  := r_routeOut
@@ -66,11 +62,8 @@ class Odd(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth
 
   switch(oddCP) {
     is(0.U) {
-        r_valid          := false.B
         r_routeOut_valid := false.B
-        when(r_start) {
-            oddCP   := 1.U
-        } .elsewhen(r_routeIn_valid) {
+        when(r_routeIn_valid) {
             r_srcCP := r_routeIn.srcCP
             r_srcID := r_routeIn.srcID
             oddCP   := r_routeIn.dstCP
@@ -183,7 +176,6 @@ class Odd(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth
         oddCP := Mux(r_srcID === 2.U, 13.U, 14.U)
     }
     is(13.U) {
-        r_valid := true.B
         oddCP   := 0.U
 
         // initialize srcID and srcCP to default value

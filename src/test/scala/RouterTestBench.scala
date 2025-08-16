@@ -213,7 +213,7 @@ class SimpleMemoryWrapperTestBench extends AnyFlatSpec with ChiselScalatestTeste
 
 class TopTestAddTestBench extends AnyFlatSpec with ChiselScalatestTester {
   "TopTestAddTestBench" should "work" in {
-    test(new TopTestAdd(3, 1024, 32, 32)).withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) { dut =>
+    test(new TopTestAdd(3, 1024, 32, 32, 5, 2)).withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) { dut =>
       dut.clock.setTimeout(3000)
 
       dut.reset.poke(true.B)

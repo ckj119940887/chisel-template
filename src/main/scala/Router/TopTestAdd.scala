@@ -4,16 +4,15 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental._
 
-class TopTestAdd(val numIPs: Int, val depth: Int, val addrWidth: Int, val dataWidth: Int) extends Module{
+class TopTestAdd(val numIPs: Int, val depth: Int, val addrWidth: Int, val dataWidth: Int, cpWidth: Int, idWidth: Int) extends Module{
     val io = IO(new Bundle{
-      // val ipReqs = Flipped(Vec(numIPs, Valid(new RequestBundle(addrWidth, dataWidth))))
-      // val ipResps = Vec(numIPs, Valid(new ResponseBundle(dataWidth)))
       val start = Input(Bool())
       val valid = Output(Bool())
     })
 
     val mem = Module(new SimpleMemoryWrapper(depth = depth, addrWidth = addrWidth, dataWidth = dataWidth))
     val arb = Module(new MemoryArbiterModule(numIPs = numIPs, addrWidth = addrWidth, dataWidth = dataWidth))
+    val router = Module(new Router(nPorts = 3, idWidth = 2, dataWidth, cpWidth = 5))
 
     mem.io.req.bits.addr  := arb.io.memory.req.bits.addr 
     mem.io.req.bits.data  := arb.io.memory.req.bits.data 
@@ -33,20 +32,18 @@ class TopTestAdd(val numIPs: Int, val depth: Int, val addrWidth: Int, val dataWi
     //   io.ipResps(i).valid     := arb.io.ipResps(i).valid
     // }
 
-    val modAdd         = Module(new Add(addrWidth, dataWidth))
-    val r_modAdd_valid = RegNext(modAdd.io.valid)
-    val r_modAdd_start = RegInit(false.B)
-    modAdd.io.start    := r_modAdd_start
-
-    val modTest         = Module(new Test(addrWidth, dataWidth))
-    val r_modTest_valid = RegNext(modTest.io.valid)
-    val r_modTest_start = RegInit(false.B)
-    modTest.io.start    := r_modTest_start
+    val modAdd         = Module(new Add(addrWidth, dataWidth, cpWidth, idWidth))
+    val modTest         = Module(new Test(addrWidth, dataWidth, cpWidth, idWidth))
 
     arb.io.ipReqs(0) := modAdd.io.req
     arb.io.ipReqs(1) := modTest.io.req
     modAdd.io.resp   := arb.io.ipResps(0)
     modTest.io.resp  := arb.io.ipResps(1)
+
+    router.io.in(1)    := modAdd.io.routeOut
+    router.io.in(2)    := modTest.io.routeOut
+    modAdd.io.routeIn  := router.io.out(1)
+    modTest.io.routeIn := router.io.out(2)
 
     val r_start      = RegNext(io.start)
     val r_valid      = RegInit(false.B)
@@ -56,43 +53,49 @@ class TopTestAdd(val numIPs: Int, val depth: Int, val addrWidth: Int, val dataWi
     val r_resp_valid = RegInit(false.B)
     val r_res        = Reg(UInt(dataWidth.W))
     val TopTestAddCP = RegInit(0.U(4.W))
+    val r_routeIn        = Reg(new Packet(2, dataWidth, 5))
+    val r_routeIn_valid  = RegInit(false.B)
+    val r_routeOut       = Reg(new Packet(2, dataWidth, 5))
+    val r_routeOut_valid = RegInit(false.B)
 
     arb.io.ipReqs(2).bits  := r_req
     arb.io.ipReqs(2).valid := r_req_valid
     r_resp                 := arb.io.ipResps(2).bits
     r_resp_valid           := arb.io.ipResps(2).valid
+
+    router.io.in(0).bits  := r_routeOut
+    router.io.in(0).valid := r_routeOut_valid
+    r_routeIn             := router.io.out(0).bits
+    r_routeIn_valid       := router.io.out(0).valid
+
     io.valid               := r_valid
 
     switch(TopTestAddCP) {
       is(0.U) {
-        r_valid      := false.B
-        TopTestAddCP := Mux(r_start, 1.U, 0.U)
+        r_valid          := false.B
+        r_routeOut_valid := false.B
+        when(r_start) {
+          TopTestAddCP := 1.U
+        } .elsewhen(r_routeIn_valid) {
+          TopTestAddCP := r_routeIn.dstCP
+        }
       }
       is(1.U) {
-        r_modTest_start := true.B
-        TopTestAddCP    := 2.U
+        // call test
+        r_routeOut.srcID := 0.U
+        r_routeOut.srcCP := 3.U
+        r_routeOut.dstID := 2.U
+        r_routeOut.dstCP := 1.U
+        r_routeOut_valid := true.B
+        TopTestAddCP     := 2.U
       }
       is(2.U) {
-        r_modTest_start := false.B
-        when(r_modTest_valid) {
-          r_modAdd_start  := true.B
-          TopTestAddCP    := 3.U
+        r_routeOut_valid := false.B
+        when(r_routeIn_valid) {
+          TopTestAddCP := r_routeIn.dstCP
         }
       }
       is(3.U) {
-        r_modAdd_start  := false.B
-        when(r_modAdd_valid) {
-          r_modTest_start := true.B
-          TopTestAddCP    := 4.U
-        }
-      }
-      is(4.U) {
-        r_modTest_start := false.B
-        when(r_modTest_valid) {
-          TopTestAddCP    := 5.U
-        }
-      }
-      is(5.U) {
         r_req_valid := true.B
         r_req.addr  := 16.U
         r_req.write := false.B
@@ -101,10 +104,10 @@ class TopTestAdd(val numIPs: Int, val depth: Int, val addrWidth: Int, val dataWi
             r_res        := r_resp.data
             printf("%d\n", r_res)
             r_req_valid  := false.B
-            TopTestAddCP := 6.U
+            TopTestAddCP := 4.U
         }
       }
-      is(6.U) {
+      is(4.U) {
         r_valid      := true.B
         TopTestAddCP := 0.U
       }

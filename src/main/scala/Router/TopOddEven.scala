@@ -23,14 +23,7 @@ class TopOddEven(val numIPs: Int, val depth: Int, val addrWidth: Int, val dataWi
     arb.io.memory.resp.valid     := mem.io.resp.valid
 
     val modEven         = Module(new Even(addrWidth = addrWidth, dataWidth = dataWidth, stackDepth = 256, cpWidth = 5, idWidth = 2))
-    val r_modEven_valid = RegNext(modEven.io.valid)
-    val r_modEven_start = RegInit(false.B)
-    modEven.io.start    := r_modEven_start
-
     val modOdd         = Module(new Odd(addrWidth = addrWidth, dataWidth = dataWidth, stackDepth = 256, cpWidth = 5, idWidth = 2))
-    val r_modOdd_valid = RegNext(modOdd.io.valid)
-    val r_modOdd_start = RegInit(false.B)
-    modOdd.io.start    := r_modOdd_start
 
     arb.io.ipReqs(0) := modEven.io.req
     arb.io.ipReqs(1) := modOdd.io.req
@@ -55,10 +48,10 @@ class TopOddEven(val numIPs: Int, val depth: Int, val addrWidth: Int, val dataWi
     val r_routeOut_valid = RegInit(false.B)
     val TopOddEvenCP     = RegInit(0.U(4.W))
 
-    router.io.in(0).bits  := r_routeIn
-    router.io.in(0).valid := r_routeIn_valid
-    r_routeOut            := router.io.out(0).bits
-    r_routeOut_valid      := router.io.out(0).valid
+    router.io.in(0).bits  := r_routeOut
+    router.io.in(0).valid := r_routeOut_valid
+    r_routeIn             := router.io.out(0).bits
+    r_routeIn_valid       := router.io.out(0).valid
 
     arb.io.ipReqs(2).bits  := r_req
     arb.io.ipReqs(2).valid := r_req_valid
@@ -94,13 +87,18 @@ class TopOddEven(val numIPs: Int, val depth: Int, val addrWidth: Int, val dataWi
         }
       }
       is(3.U) {
-        r_modEven_start := true.B
+        // call even
+        r_routeOut.srcID := 0.U
+        r_routeOut.srcCP := 5.U
+        r_routeOut.dstID := 1.U
+        r_routeOut.dstCP := 1.U
+        r_routeOut_valid := true.B
         TopOddEvenCP := 4.U
       }
       is(4.U) {
-        r_modEven_start := false.B
-        when(r_modEven_valid) {
-            TopOddEvenCP := 5.U
+        r_routeOut_valid := false.B
+        when(r_routeIn_valid) {
+            TopOddEvenCP := r_routeIn.dstCP
         }
       }
       is(5.U) {

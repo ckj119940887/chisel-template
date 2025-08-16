@@ -23,9 +23,6 @@ class TopFactorial(val numIPs: Int, val depth: Int, val addrWidth: Int, val data
     arb.io.memory.resp.valid     := mem.io.resp.valid
 
     val modFactorial         = Module(new Factorial(addrWidth = addrWidth, dataWidth = dataWidth, stackDepth = 256, cpWidth = 5, idWidth = 2))
-    val r_modFactorial_valid = RegNext(modFactorial.io.valid)
-    val r_modFactorial_start = RegInit(false.B)
-    modFactorial.io.start    := r_modFactorial_start
 
     arb.io.ipReqs(1)      := modFactorial.io.req
     modFactorial.io.resp  := arb.io.ipResps(1)
@@ -46,10 +43,10 @@ class TopFactorial(val numIPs: Int, val depth: Int, val addrWidth: Int, val data
     val r_routeOut_valid = RegInit(false.B)
     val TopFactorialCP   = RegInit(0.U(4.W))
 
-    router.io.in(0).bits  := r_routeIn
-    router.io.in(0).valid := r_routeIn_valid
-    r_routeOut            := router.io.out(0).bits
-    r_routeOut_valid      := router.io.out(0).valid
+    router.io.in(0).bits  := r_routeOut
+    router.io.in(0).valid := r_routeOut_valid
+    r_routeIn             := router.io.out(0).bits
+    r_routeIn_valid       := router.io.out(0).valid
 
     arb.io.ipReqs(0).bits  := r_req
     arb.io.ipReqs(0).valid := r_req_valid
@@ -85,13 +82,17 @@ class TopFactorial(val numIPs: Int, val depth: Int, val addrWidth: Int, val data
         }
       }
       is(3.U) {
-        r_modFactorial_start := true.B
-        TopFactorialCP       := 4.U
+        r_routeOut.srcID := 0.U
+        r_routeOut.srcCP := 5.U
+        r_routeOut.dstID := 1.U
+        r_routeOut.dstCP := 1.U
+        r_routeOut_valid := true.B
+        TopFactorialCP   := 4.U
       }
       is(4.U) {
-        r_modFactorial_start := false.B
-        when(r_modFactorial_valid) {
-            TopFactorialCP := 5.U
+        r_routeOut_valid := false.B
+        when(r_routeIn_valid) {
+            TopFactorialCP := r_routeIn.dstCP
         }
       }
       is(5.U) {

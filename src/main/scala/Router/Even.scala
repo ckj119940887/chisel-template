@@ -12,8 +12,6 @@ class StackData(val addrWidth: Int, val idWidth: Int, val cpWidth: Int) extends 
 
 class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth: Int) extends Module{
   val io = IO(new Bundle{
-    val start    = Input(Bool())
-    val valid    = Output(Bool())
     val req      = Valid(new RequestBundle(addrWidth, dataWidth))
     val resp     = Flipped(Valid(new ResponseBundle(dataWidth)))
     val routeIn  = Flipped(Valid(new Packet(idWidth, dataWidth, cpWidth)))
@@ -34,8 +32,6 @@ class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidt
   r_stack_dataOut      := stack.io.dataOut
   r_stack_valid        := stack.io.valid
 
-  val r_start          = RegNext(io.start)
-  val r_valid          = RegInit(false.B)
   val r_req            = Reg(new RequestBundle(addrWidth, dataWidth))
   val r_req_valid      = RegInit(false.B)
   val r_resp           = Reg(new ResponseBundle(dataWidth))
@@ -56,7 +52,7 @@ class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidt
   r_resp_valid      := io.resp.valid
   io.req.bits       := r_req
   io.req.valid      := r_req_valid
-  io.valid          := r_valid
+
   r_routeIn         := io.routeIn.bits
   r_routeIn_valid   := io.routeIn.valid
   io.routeOut.bits  := r_routeOut
@@ -72,11 +68,8 @@ class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidt
 
   switch(evenCP) {
     is(0.U) {
-        r_valid          := false.B
         r_routeOut_valid := false.B
-        when(r_start) {
-            evenCP := 1.U
-        } .elsewhen(r_routeIn_valid) {
+        when(r_routeIn_valid) {
             r_srcCP := r_routeIn.srcCP
             r_srcID := r_routeIn.srcID
             evenCP  := r_routeIn.dstCP
@@ -196,7 +189,6 @@ class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidt
         evenCP := Mux(r_srcID === 1.U, 15.U, 16.U)
     }
     is(15.U) {
-        r_valid := true.B
         evenCP := 0.U
 
         // initialize srcID and srcCP to default value
