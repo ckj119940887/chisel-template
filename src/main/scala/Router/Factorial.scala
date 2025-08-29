@@ -11,12 +11,14 @@ class FactorialStackData(val addrWidth: Int, val idWidth: Int, val cpWidth: Int,
   val para       = UInt(dataWidth.W)
 }
 
-class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth: Int) extends Module{
+class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth: Int, depth: Int) extends Module{
   val io = IO(new Bundle{
-    val req      = Valid(new RequestBundle(addrWidth, dataWidth))
-    val resp     = Flipped(Valid(new ResponseBundle(dataWidth)))
-    val routeIn  = Flipped(Valid(new Packet(idWidth, dataWidth, cpWidth)))
-    val routeOut = Valid(new Packet(idWidth, dataWidth, cpWidth))
+    val arbMem_req  = Valid(new BlockMemoryRequestBundle(addrWidth, dataWidth, depth))
+    val arbMem_resp = Flipped(Valid(new BlockMemoryResponseBundle(dataWidth)))
+    val arbMul_req  = Valid(new MultiplyRequestBundle(dataWidth))
+    val arbMul_resp = Flipped(Valid(new MultiplyResponseBundle(dataWidth)))
+    val routeIn     = Flipped(Valid(new Packet(idWidth, dataWidth, cpWidth)))
+    val routeOut    = Valid(new Packet(idWidth, dataWidth, cpWidth))
   })
 
   val r_stack_push         = RegInit(false.B)
@@ -33,10 +35,25 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
   r_stack_dataOut  := stack.io.dataOut
   r_stack_valid    := stack.io.valid
 
-  val r_req            = Reg(new RequestBundle(addrWidth, dataWidth))
-  val r_req_valid      = RegInit(false.B)
-  val r_resp           = Reg(new ResponseBundle(dataWidth))
-  val r_resp_valid     = RegInit(false.B)
+  val r_arbMem_req        = Reg(new BlockMemoryRequestBundle(addrWidth, dataWidth, depth))
+  val r_arbMem_req_valid  = RegInit(false.B)
+  val r_arbMem_resp       = Reg(new BlockMemoryResponseBundle(dataWidth))
+  val r_arbMem_resp_valid = RegInit(false.B)
+
+  r_arbMem_resp       := io.arbMem_resp.bits
+  r_arbMem_resp_valid := io.arbMem_resp.valid
+  io.arbMem_req.bits  := r_arbMem_req
+  io.arbMem_req.valid := r_arbMem_req_valid
+
+  val r_arbMul_req          = Reg(new MultiplyRequestBundle(dataWidth))
+  val r_arbMul_req_valid    = RegInit(false.B)
+  val r_arbMul_resp         = Reg(new MultiplyResponseBundle(dataWidth))
+  val r_arbMul_resp_valid   = RegInit(false.B)
+  r_arbMul_resp       := io.arbMul_resp.bits
+  r_arbMul_resp_valid := io.arbMul_resp.valid
+  io.arbMul_req.bits  := r_arbMul_req
+  io.arbMul_req.valid := r_arbMul_req_valid
+
   val r_routeIn        = Reg(new Packet(idWidth, dataWidth, cpWidth))
   val r_routeIn_valid  = RegInit(false.B)
   val r_routeOut       = Reg(new Packet(idWidth, dataWidth, cpWidth))
@@ -49,11 +66,6 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
   val r_srcResAddr     = Reg(UInt(addrWidth.W))
   val r_para           = Reg(UInt(dataWidth.W))
 
-  r_resp            := io.resp.bits
-  r_resp_valid      := io.resp.valid
-  io.req.bits       := r_req
-  io.req.valid      := r_req_valid
-
   r_routeIn         := io.routeIn.bits
   r_routeIn_valid   := io.routeIn.valid
   io.routeOut.bits  := r_routeOut
@@ -61,8 +73,8 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
 
   // global memory map
   // 0x0 r_srcResAddr for factorial
-  // 0x4 r_para for factorial
-  // 0x8 r_res for factorial
+  // 0x8 r_para for factorial
+  // 0x10 r_res for factorial
 
   switch(factorialCP) {
     is(0.U) {
@@ -74,25 +86,27 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
         }
     }
     is(1.U) {
-        r_req_valid := true.B
-        r_req.addr  := 0.U
-        r_req.write := false.B
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.readAddr  := 0.U
+        r_arbMem_req.mode      := 1.U
 
-        when(r_resp_valid) {
-            r_srcResAddr := r_resp.data
-            r_req_valid  := false.B
-            factorialCP  := 2.U
+        when(r_arbMem_resp_valid) {
+            r_srcResAddr       := r_arbMem_resp.data
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            factorialCP        := 2.U
         }
     }
     is(2.U) {
-        r_req_valid := true.B
-        r_req.addr  := 4.U
-        r_req.write := false.B
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.readAddr  := 8.U
+        r_arbMem_req.mode      := 1.U
 
-        when(r_resp_valid) {
-            r_para      := r_resp.data
-            r_req_valid := false.B
-            factorialCP := 3.U
+        when(r_arbMem_resp_valid) {
+            r_para             := r_arbMem_resp.data
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            factorialCP        := 3.U
         }
     }
     is(3.U) {
@@ -115,25 +129,27 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
     is(6.U) {
         r_stack_en := false.B
 
-        r_req_valid := true.B
-        r_req.addr  := 0.U // r_srcResAddr for factorial
-        r_req.write := true.B
-        r_req.data  := 8.U
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.writeAddr := 0.U // r_srcResAddr for factorial
+        r_arbMem_req.writeData := 16.U
+        r_arbMem_req.mode      := 2.U
 
-        when(r_resp_valid) {
-            r_req_valid := false.B
-            factorialCP := 7.U
+        when(r_arbMem_resp_valid) {
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            factorialCP        := 7.U
         }
     }
     is(7.U) {
-        r_req_valid := true.B
-        r_req.addr  := 4.U // r_para for facorial
-        r_req.write := true.B
-        r_req.data  := r_para - 1.U
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.writeAddr := 8.U // r_para for factorial
+        r_arbMem_req.writeData := r_para - 1.U
+        r_arbMem_req.mode      := 2.U
 
-        when(r_resp_valid) {
-            r_req_valid := false.B
-            factorialCP := 8.U
+        when(r_arbMem_resp_valid) {
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            factorialCP        := 8.U
         }
     }
     is(8.U) {
@@ -146,14 +162,15 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
     }
     is(9.U) {
         // get the result from memory
-        r_req_valid := true.B
-        r_req.addr  := 8.U
-        r_req.write := false.B
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.readAddr  := 16.U
+        r_arbMem_req.mode      := 1.U
 
-        when(r_resp_valid) {
-            r_res       := r_resp.data
-            r_req_valid := false.B
-            factorialCP := 10.U
+        when(r_arbMem_resp_valid) {
+            r_res              := r_arbMem_resp.data
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            factorialCP        := 10.U
         }
     }
     is(10.U) {
@@ -175,18 +192,27 @@ class Factorial(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, i
         }
     }
     is(13.U) {
-        r_res       := r_res * r_para
-        factorialCP := 14.U
+        r_arbMul_req_valid := true.B
+        r_arbMul_req.a     := r_para
+        r_arbMul_req.b     := r_res
+        when(r_arbMul_resp_valid) {
+            r_res              := r_arbMul_resp.out
+            r_arbMul_req_valid := false.B
+            factorialCP := 14.U
+        }
+        // r_res       := r_res * r_para
+        // factorialCP := 14.U
     }
     is(14.U) {
-        r_req_valid := true.B
-        r_req.addr  := r_srcResAddr
-        r_req.write := true.B
-        r_req.data  := r_res
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.writeAddr := r_srcResAddr
+        r_arbMem_req.writeData := r_res
+        r_arbMem_req.mode      := 2.U
 
-        when(r_resp_valid) {
-            r_req_valid := false.B
-            factorialCP := 15.U
+        when(r_arbMem_resp_valid) {
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            factorialCP        := 15.U
         }
     }
     is(15.U) {

@@ -4,6 +4,12 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental._
 
+class StackData(val addrWidth: Int, val idWidth: Int, val cpWidth: Int) extends Bundle {
+  val srcID      = UInt(idWidth.W)
+  val srcCP      = UInt(cpWidth.W)
+  val srcResAddr = UInt(addrWidth.W)
+}
+
 class Stack[T <: Data](val gen: T, val width: Int, val depth: Int) extends Module {
   val io = IO(new Bundle {
     val push         = Input(Bool())

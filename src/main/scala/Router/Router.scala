@@ -43,6 +43,8 @@ class Router(val nPorts: Int, val idWidth: Int, val dataWidth: Int, val cpWidth:
     r_outputBuffer(i).data  := 0.U
     r_outputBuffer(i).srcCP := 0.U
     r_outputBuffer(i).dstCP := 0.U
+
+    r_outputBuffer_valid(i) := false.B
   }
 
   // arbiter
@@ -50,8 +52,6 @@ class Router(val nPorts: Int, val idWidth: Int, val dataWidth: Int, val cpWidth:
     when(r_inputBuffer_valid(i)) {
       r_outputBuffer_valid(r_inputBuffer(i).dstID) := true.B
       r_outputBuffer(r_inputBuffer(i).dstID)       := r_inputBuffer(i)
-    }.otherwise {
-      r_outputBuffer_valid(r_inputBuffer(i).dstID) := false.B
     }
   }
 }

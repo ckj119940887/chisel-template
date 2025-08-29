@@ -96,8 +96,8 @@ class MemoryArbiterTestBench extends AnyFlatSpec with ChiselScalatestTester {
         ip.bits.write.poke(false.B)
       }
 
-      dut.io.memory.resp.valid.poke(false.B)
-      dut.io.memory.resp.bits.data.poke(0.U)
+      dut.io.ip.resp.valid.poke(false.B)
+      dut.io.ip.resp.bits.data.poke(0.U)
       dut.clock.step()
 
       // IP1 也发起写请求
@@ -108,13 +108,13 @@ class MemoryArbiterTestBench extends AnyFlatSpec with ChiselScalatestTester {
       dut.clock.step()
 
       // IP 请求完成（断言 memory.req.fire）
-      while (!dut.io.memory.req.valid.peek().litToBoolean) {
+      while (!dut.io.ip.req.valid.peek().litToBoolean) {
         dut.clock.step()
       }
 
       // memory resp 模拟返回响应（第一个响应 IP0）
-      dut.io.memory.resp.valid.poke(true.B)
-      dut.io.memory.resp.bits.data.poke(0x0EADBEEF.U)
+      dut.io.ip.resp.valid.poke(true.B)
+      dut.io.ip.resp.bits.data.poke(0x0EADBEEF.U)
 
       for(i <- 0 until 100) {
         dut.clock.step()
@@ -213,7 +213,7 @@ class SimpleMemoryWrapperTestBench extends AnyFlatSpec with ChiselScalatestTeste
 
 class TopTestAddTestBench extends AnyFlatSpec with ChiselScalatestTester {
   "TopTestAddTestBench" should "work" in {
-    test(new TopTestAdd(3, 1024, 32, 32, 5, 2)).withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) { dut =>
+    test(new TopTestAdd(3, 1024, 64, 64, 5, 2)).withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) { dut =>
       dut.clock.setTimeout(3000)
 
       dut.reset.poke(true.B)
@@ -223,9 +223,9 @@ class TopTestAddTestBench extends AnyFlatSpec with ChiselScalatestTester {
       dut.reset.poke(false.B)
       dut.clock.step()
 
-      dut.io.start.poke(true.B)
-      dut.clock.step()
-      dut.io.start.poke(false.B)
+      // dut.io.start.poke(true.B)
+      // dut.clock.step()
+      // dut.io.start.poke(false.B)
 
       for(i <- 0 until 300) {
         dut.clock.step()
@@ -247,9 +247,9 @@ class TopOddEvenTestBench extends AnyFlatSpec with ChiselScalatestTester {
       dut.reset.poke(false.B)
       dut.clock.step()
 
-      dut.io.start.poke(true.B)
-      dut.clock.step()
-      dut.io.start.poke(false.B)
+      // dut.io.start.poke(true.B)
+      // dut.clock.step()
+      // dut.io.start.poke(false.B)
 
       for(i <- 0 until 1000) {
         dut.clock.step()
@@ -271,9 +271,9 @@ class TopFactorialTestBench extends AnyFlatSpec with ChiselScalatestTester {
       dut.reset.poke(false.B)
       dut.clock.step()
 
-      dut.io.start.poke(true.B)
-      dut.clock.step()
-      dut.io.start.poke(false.B)
+      // dut.io.start.poke(true.B)
+      // dut.clock.step()
+      // dut.io.start.poke(false.B)
 
       for(i <- 0 until 1000) {
         dut.clock.step()

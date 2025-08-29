@@ -4,18 +4,12 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental._
 
-class StackData(val addrWidth: Int, val idWidth: Int, val cpWidth: Int) extends Bundle {
-  val srcID      = UInt(idWidth.W)
-  val srcCP      = UInt(cpWidth.W)
-  val srcResAddr = UInt(addrWidth.W)
-}
-
-class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth: Int) extends Module{
+class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidth: Int, depth: Int) extends Module{
   val io = IO(new Bundle{
-    val req      = Valid(new RequestBundle(addrWidth, dataWidth))
-    val resp     = Flipped(Valid(new ResponseBundle(dataWidth)))
-    val routeIn  = Flipped(Valid(new Packet(idWidth, dataWidth, cpWidth)))
-    val routeOut = Valid(new Packet(idWidth, dataWidth, cpWidth))
+    val arbMem_req  = Valid(new BlockMemoryRequestBundle(addrWidth, dataWidth, depth))
+    val arbMem_resp = Flipped(Valid(new BlockMemoryResponseBundle(dataWidth)))
+    val routeIn     = Flipped(Valid(new Packet(idWidth, dataWidth, cpWidth)))
+    val routeOut    = Valid(new Packet(idWidth, dataWidth, cpWidth))
   })
 
   val r_stack_push         = RegInit(false.B)
@@ -32,10 +26,11 @@ class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidt
   r_stack_dataOut      := stack.io.dataOut
   r_stack_valid        := stack.io.valid
 
-  val r_req            = Reg(new RequestBundle(addrWidth, dataWidth))
-  val r_req_valid      = RegInit(false.B)
-  val r_resp           = Reg(new ResponseBundle(dataWidth))
-  val r_resp_valid     = RegInit(false.B)
+  val r_arbMem_req        = Reg(new BlockMemoryRequestBundle(addrWidth, dataWidth, depth))
+  val r_arbMem_req_valid  = RegInit(false.B)
+  val r_arbMem_resp       = Reg(new BlockMemoryResponseBundle(dataWidth))
+  val r_arbMem_resp_valid = RegInit(false.B)
+
   val r_routeIn        = Reg(new Packet(idWidth, dataWidth, cpWidth))
   val r_routeIn_valid  = RegInit(false.B)
   val r_routeOut       = Reg(new Packet(idWidth, dataWidth, cpWidth))
@@ -48,10 +43,10 @@ class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidt
   val r_srcResAddr     = Reg(UInt(addrWidth.W))
   val r_para           = Reg(UInt(dataWidth.W))
 
-  r_resp            := io.resp.bits
-  r_resp_valid      := io.resp.valid
-  io.req.bits       := r_req
-  io.req.valid      := r_req_valid
+  r_arbMem_resp       := io.arbMem_resp.bits
+  r_arbMem_resp_valid := io.arbMem_resp.valid
+  io.arbMem_req.bits  := r_arbMem_req
+  io.arbMem_req.valid := r_arbMem_req_valid
 
   r_routeIn         := io.routeIn.bits
   r_routeIn_valid   := io.routeIn.valid
@@ -76,25 +71,27 @@ class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidt
         }
     }
     is(1.U) {
-        r_req_valid := true.B
-        r_req.addr  := 0.U
-        r_req.write := false.B
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.readAddr  := 0.U
+        r_arbMem_req.mode      := 1.U
 
-        when(r_resp_valid) {
-            r_srcResAddr := r_resp.data
-            r_req_valid  := false.B
-            evenCP       := 2.U
+        when(r_arbMem_resp_valid) {
+            r_srcResAddr        := r_arbMem_resp.data
+            r_arbMem_req_valid  := false.B
+            r_arbMem_req.mode   := 0.U
+            evenCP              := 2.U
         }
     }
     is(2.U) {
-        r_req_valid := true.B
-        r_req.addr  := 4.U
-        r_req.write := false.B
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.readAddr  := 8.U
+        r_arbMem_req.mode      := 1.U
 
-        when(r_resp_valid) {
-            r_para      := r_resp.data
-            r_req_valid := false.B
-            evenCP       := 3.U
+        when(r_arbMem_resp_valid) {
+            r_para             := r_arbMem_resp.data
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            evenCP             := 3.U
         }
     }
     is(3.U) {
@@ -116,25 +113,27 @@ class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidt
     is(6.U) {
         r_stack_en := false.B
 
-        r_req_valid := true.B
-        r_req.addr  := 12.U // r_srcResAddr for odd
-        r_req.write := true.B
-        r_req.data  := 8.U
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.writeAddr := 24.U // r_srcResAddr for odd
+        r_arbMem_req.writeData := 16.U
+        r_arbMem_req.mode      := 2.U
 
-        when(r_resp_valid) {
-            r_req_valid := false.B
-            evenCP      := 7.U
+        when(r_arbMem_resp_valid) {
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            evenCP             := 7.U
         }
     }
     is(7.U) {
-        r_req_valid := true.B
-        r_req.addr  := 16.U // r_para for odd
-        r_req.write := true.B
-        r_req.data  := r_para - 1.U
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.writeAddr := 32.U // r_para for odd
+        r_arbMem_req.writeData := r_para - 1.U
+        r_arbMem_req.mode      := 2.U
 
-        when(r_resp_valid) {
-            r_req_valid := false.B
-            evenCP      := 8.U
+        when(r_arbMem_resp_valid) {
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            evenCP             := 8.U
         }
     }
     is(8.U) {
@@ -147,14 +146,15 @@ class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidt
     }
     is(9.U) {
         // get the result from memory
-        r_req_valid := true.B
-        r_req.addr  := 8.U
-        r_req.write := false.B
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.readAddr  := 16.U
+        r_arbMem_req.mode      := 1.U
 
-        when(r_resp_valid) {
-            r_res       := r_resp.data
-            r_req_valid := false.B
-            evenCP      := 10.U
+        when(r_arbMem_resp_valid) {
+            r_res              := r_arbMem_resp.data
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            evenCP             := 10.U
         }
     }
     is(10.U) {
@@ -175,14 +175,15 @@ class Even(addrWidth: Int, dataWidth: Int, stackDepth: Int, cpWidth: Int, idWidt
         }
     }
     is(13.U) {
-        r_req_valid := true.B
-        r_req.addr  := r_srcResAddr
-        r_req.write := true.B
-        r_req.data  := r_res
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.writeAddr := r_srcResAddr
+        r_arbMem_req.writeData := r_res
+        r_arbMem_req.mode      := 2.U
 
-        when(r_resp_valid) {
-            r_req_valid := false.B
-            evenCP      := 14.U
+        when(r_arbMem_resp_valid) {
+            r_arbMem_req_valid := false.B
+            evenCP             := 14.U
+            r_arbMem_req.mode  := 0.U
         }
     }
     is(14.U) {

@@ -4,20 +4,21 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental._
 
-class Test(addrWidth: Int, dataWidth: Int, cpWidth: Int, idWidth: Int) extends Module{
+class Test(addrWidth: Int, dataWidth: Int, cpWidth: Int, idWidth: Int, depth: Int) extends Module{
   val io = IO(new Bundle{
-    val req      = Valid(new RequestBundle(addrWidth, dataWidth))
-    val resp     = Flipped(Valid(new ResponseBundle(dataWidth)))
-    val routeIn  = Flipped(Valid(new Packet(idWidth, dataWidth, cpWidth)))
-    val routeOut = Valid(new Packet(idWidth, dataWidth, cpWidth))
+    val arbMem_req  = Valid(new BlockMemoryRequestBundle(addrWidth, dataWidth, depth))
+    val arbMem_resp = Flipped(Valid(new BlockMemoryResponseBundle(dataWidth)))
+    val routeIn     = Flipped(Valid(new Packet(idWidth, dataWidth, cpWidth)))
+    val routeOut    = Valid(new Packet(idWidth, dataWidth, cpWidth))
   })
 
-  val r_req            = Reg(new RequestBundle(addrWidth, dataWidth))
-  val r_req_valid      = RegInit(false.B)
-  val r_resp           = Reg(new ResponseBundle(dataWidth))
-  val r_resp_valid     = RegInit(false.B)
+  val r_arbMem_req            = Reg(new BlockMemoryRequestBundle(addrWidth, dataWidth, depth))
+  val r_arbMem_req_valid      = RegInit(false.B)
+  val r_arbMem_resp           = Reg(new BlockMemoryResponseBundle(dataWidth))
+  val r_arbMem_resp_valid     = RegInit(false.B)
+
   val testCP           = RegInit(0.U(4.W))
-  val r_routeIn        = Reg(new Packet(idWidth, dataWidth, cpWidth))
+  val r_routeIn        = RegInit(0.U.asTypeOf(new Packet(idWidth, dataWidth, cpWidth)))
   val r_routeIn_valid  = RegInit(false.B)
   val r_routeOut       = Reg(new Packet(idWidth, dataWidth, cpWidth))
   val r_routeOut_valid = RegInit(false.B)
@@ -27,10 +28,10 @@ class Test(addrWidth: Int, dataWidth: Int, cpWidth: Int, idWidth: Int) extends M
   val r_srcResAddr = Reg(UInt(addrWidth.W))
   val r_res        = Reg(UInt(dataWidth.W))
 
-  r_resp       := io.resp.bits
-  r_resp_valid := io.resp.valid
-  io.req.bits  := r_req
-  io.req.valid := r_req_valid
+  r_arbMem_resp       := io.arbMem_resp.bits
+  r_arbMem_resp_valid := io.arbMem_resp.valid
+  io.arbMem_req.bits  := r_arbMem_req
+  io.arbMem_req.valid := r_arbMem_req_valid
 
   r_routeIn           := io.routeIn.bits
   r_routeIn_valid     := io.routeIn.valid
@@ -40,45 +41,46 @@ class Test(addrWidth: Int, dataWidth: Int, cpWidth: Int, idWidth: Int) extends M
   switch(testCP) {
     is(0.U) {
         r_routeOut_valid := false.B
-        when(r_start) {
-
-        } .elsewhen(r_routeIn_valid) {
+        when(r_routeIn_valid) {
             r_srcCP := r_routeIn.srcCP
             r_srcID := r_routeIn.srcID
             testCP  := r_routeIn.dstCP
         }
     }
     is(1.U) {
-        r_req_valid := true.B
-        r_req.addr  := 0.U
-        r_req.write := true.B
-        r_req.data  := 1.U
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.writeAddr := 0.U
+        r_arbMem_req.writeData := 1.U
+        r_arbMem_req.mode      := 2.U
 
-        when(r_resp_valid) {
-            r_req_valid := false.B
-            testCP      := 2.U
+        when(r_arbMem_resp_valid) {
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            testCP             := 2.U
         }
     }
     is(2.U) {
-        r_req_valid := true.B
-        r_req.addr  := 4.U
-        r_req.write := true.B
-        r_req.data  := 2.U
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.writeAddr := 8.U
+        r_arbMem_req.writeData := 2.U
+        r_arbMem_req.mode      := 2.U
 
-        when(r_resp_valid) {
-            r_req_valid := false.B
-            testCP      := 3.U
+        when(r_arbMem_resp_valid) {
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            testCP             := 3.U
         }
     }
     is(3.U) {
-        r_req_valid := true.B
-        r_req.addr  := 8.U
-        r_req.write := true.B
-        r_req.data  := 3.U
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.writeAddr := 16.U
+        r_arbMem_req.writeData := 3.U
+        r_arbMem_req.mode      := 2.U
 
-        when(r_resp_valid) {
-            r_req_valid := false.B
-            testCP      := 4.U
+        when(r_arbMem_resp_valid) {
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            testCP             := 4.U
         }
     }
     is(4.U) {
@@ -97,25 +99,27 @@ class Test(addrWidth: Int, dataWidth: Int, cpWidth: Int, idWidth: Int) extends M
         }
     }
     is(6.U) {
-        r_req_valid := true.B
-        r_req.addr  := 12.U
-        r_req.write := false.B
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.readAddr  := 24.U
+        r_arbMem_req.mode      := 1.U
 
-        when(r_resp_valid) {
-            r_res       := r_resp.data
-            r_req_valid := false.B
-            testCP      := 7.U
+        when(r_arbMem_resp_valid) {
+            r_res              := r_arbMem_resp.data
+            r_arbMem_req.mode  := 0.U
+            r_arbMem_req_valid := false.B
+            testCP             := 7.U
         }
     }
     is(7.U) {
-        r_req_valid := true.B
-        r_req.addr  := 16.U
-        r_req.write := true.B
-        r_req.data  := r_res
+        r_arbMem_req_valid     := true.B
+        r_arbMem_req.writeAddr := 32.U
+        r_arbMem_req.writeData := r_res
+        r_arbMem_req.mode      := 2.U
 
-        when(r_resp_valid) {
-            r_req_valid := false.B
-            testCP      := 8.U
+        when(r_arbMem_resp_valid) {
+            r_arbMem_req_valid := false.B
+            r_arbMem_req.mode  := 0.U
+            testCP             := 8.U
         }
     }
     is(8.U) {
