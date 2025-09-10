@@ -14,61 +14,15 @@ class RemainerSigned64(val width: Int = 64) extends Module {
     val quotient = Output(SInt(width.W))
     val remainder = Output(SInt(width.W))
   })
-
-  val a_neg = io.a(width-1)
-  val b_neg = io.b(width-1)
-  val a_abs = Mux(a_neg, -io.a, io.a).asUInt
-  val b_abs = Mux(b_neg, -io.b, io.b).asUInt
-
-  val dividend = RegInit(0.U(width.W))
-  val divisor = RegInit(0.U(width.W))
-  val quotient = RegInit(0.U(width.W))
-  val remainder = RegInit(0.U(width.W))
-  val count = RegInit((width - 1).U((1+log2Ceil(width)).W))
-  val busy = RegInit(false.B)
-
-  when(io.start && !busy) {
-    dividend := a_abs
-    divisor := b_abs
-    quotient := 0.U
-    remainder := 0.U
-    count := width.U
-    busy := true.B
-  } .elsewhen(busy) {
-    when(count === 0.U) {
-      count := width.U
-      busy := false.B
-    } .otherwise {
-      val shifted = remainder << 1 | (dividend >> (width - 1))
-      remainder := shifted
-
-      when (shifted >= divisor) {
-        remainder := shifted - divisor
-        quotient := (quotient << 1) | 1.U
-      } .otherwise {
-        quotient := quotient << 1
-      }
-
-      dividend := dividend << 1
-      count := count - 1.U
-    }
-  }
-
-  val r_start      = RegInit(false.B)
-  val r_start_next = RegInit(false.B)
-  val r_busy       = RegInit(true.B)
-
-  r_start      := io.start
-  r_start_next := r_start
-  when(r_start & ~r_start_next) {
-      r_busy := false.B
-  } .elsewhen(io.valid) {
-      r_busy := true.B
-  }
-
-  io.quotient := Mux(a_neg ^ b_neg, -quotient, quotient).asSInt
-  io.remainder := Mux(a_neg, -remainder, remainder).asSInt
-  io.valid := (count === 0.U) & ~r_busy
+  val div = Module(new XilinxDividerSigned64Wrapper)
+  div.io.clock := clock.asBool
+  div.io.resetn := !reset.asBool
+  div.io.a := io.a
+  div.io.b := io.b
+  div.io.start := io.start
+  io.valid := div.io.valid
+  io.quotient := div.io.quotient
+  io.remainder := div.io.remainder
 }
 
 
@@ -216,7 +170,7 @@ class RemainerSigned64FunctionModule(dataWidth: Int) extends Module{
   switch(RemainerSigned64CP) {
     is(0.U) {
       r_arb_req_valid := true.B
-      r_arb_req.a     := (-4).S
+      r_arb_req.a     := (-5).S
       r_arb_req.b     := (-2).S
       when(r_arb_resp_valid) {
           r_res                := r_arb_resp.out
@@ -225,6 +179,16 @@ class RemainerSigned64FunctionModule(dataWidth: Int) extends Module{
       }
     }
     is(1.U) {
+      r_arb_req_valid := true.B
+      r_arb_req.a     := (-4).S
+      r_arb_req.b     := (-2).S
+      when(r_arb_resp_valid) {
+          r_res                := r_arb_resp.out
+          r_arb_req_valid := false.B
+          RemainerSigned64CP := 2.U
+      }
+    }
+    is(2.U) {
       printf("result:%d\n", r_res)
     }
   }

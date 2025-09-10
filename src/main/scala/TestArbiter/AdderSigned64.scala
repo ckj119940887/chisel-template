@@ -5,6 +5,19 @@ import chisel3.util._
 import chisel3.experimental._
 
 
+class XilinxAdderSigned64Wrapper extends BlackBox with HasBlackBoxResource {
+  val io = IO(new Bundle {
+    val clk = Input(Bool())
+    val ce = Input(Bool())
+    val A = Input(SInt(64.W))
+    val B = Input(SInt(64.W))
+    val valid = Output(Bool())
+    val S = Output(SInt(64.W))
+  })
+
+  addResource("/verilog/XilinxAdderSigned64Wrapper.v")
+}
+
 class AdderSigned64(val width: Int = 64) extends Module {
     val io = IO(new Bundle{
         val a = Input(SInt(width.W))
@@ -13,40 +26,13 @@ class AdderSigned64(val width: Int = 64) extends Module {
         val out = Output(SInt(width.W))
         val valid = Output(Bool())
     })
-
-    val state = RegInit(0.U(2.W))
-    val regA = Reg(SInt(width.W))
-    val regB = Reg(SInt(width.W))
-    val result = Reg(SInt(width.W))
-
-    val r_start      = RegInit(false.B)
-    val r_start_next = RegInit(false.B)
-    val r_busy       = RegInit(true.B)
-
-    r_start      := io.start
-    r_start_next := r_start
-    when(r_start & ~r_start_next) {
-        r_busy := false.B
-    } .elsewhen(io.valid) {
-        r_busy := true.B
-    }
-
-    io.valid := Mux(state === 2.U, true.B, false.B)
-    io.out := Mux(state === 2.U, result, 0.S)
-    switch(state) {
-        is(0.U) {
-            state := Mux(r_start & ~r_busy, 1.U, 0.U)
-            regA := Mux(r_start, io.a, regA)
-            regB := Mux(r_start, io.b, regB)
-        }
-        is(1.U) {
-            result := regA + regB
-            state := 2.U
-        }
-        is(2.U) {
-            state := 0.U
-        }
-    }
+  val adder = Module(new XilinxAdderSigned64Wrapper)
+  adder.io.clk := clock.asBool
+  adder.io.A := RegNext(io.a)
+  adder.io.B := RegNext(io.b)
+  adder.io.ce := RegNext(io.start)
+  io.valid := RegNext(adder.io.valid)
+  io.out := RegNext(adder.io.S)
 }
 
 
@@ -203,6 +189,16 @@ class AdderSigned64FunctionModule(dataWidth: Int) extends Module{
       }
     }
     is(1.U) {
+      r_arb_req_valid := true.B
+      r_arb_req.a     := 2.S
+      r_arb_req.b     := (-2).S
+      when(r_arb_resp_valid) {
+          r_res                := r_arb_resp.out
+          r_arb_req_valid := false.B
+          AdderSigned64CP := 2.U
+      }
+    }
+    is(2.U) {
       printf("result:%d\n", r_res)
     }
   }

@@ -1,20 +1,20 @@
-module XilinxIndexMultiplierWrapper (
+module XilinxMultiplierSigned64Wrapper(
     input wire clk,
     input wire ce,
-    input wire [7:0] A,
-    input wire [7:0] B,
+    input wire [63:0] a,
+    input wire [63:0] b,
     output wire valid,
-    output wire [7:0] P);
+    output wire [63:0] p);
 
-  localparam LATENCY = 3;
-  reg [LATENCY-1:0] valid_shift = 'd0;
+  localparam LATENCY = 18;
 
-  XilinxIndexMultiplier u_XilinxIndexMultiplier (
+  reg [LATENCY-1:0] valid_shift;
+  XilinxMultiplierSigned64 u_XilinxMultiplierSigned64 (
     .CLK(clk),
     .CE(ce),
-    .A(A),
-    .B(B),
-    .P(P)
+    .A(a),
+    .B(b),
+    .P(p)
   );
 
   always @(posedge clk) begin

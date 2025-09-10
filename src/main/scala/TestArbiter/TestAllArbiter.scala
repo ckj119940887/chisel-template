@@ -93,9 +93,9 @@ class TestAllArbiter extends Module{
     // val arbMod       = Module(new OrUnsigned64ArbiterModule(numIPs = 1, dataWidth = 64))
     // val testFunction = Module(new OrUnsigned64FunctionModule(dataWidth = 64))
 
-    // val modWrapper   = Module(new RemainerSigned64Wrapper(dataWidth = 64))
-    // val arbMod       = Module(new RemainerSigned64ArbiterModule(numIPs = 1, dataWidth = 64))
-    // val testFunction = Module(new RemainerSigned64FunctionModule(dataWidth = 64))
+    val modWrapper   = Module(new RemainerSigned64Wrapper(dataWidth = 64))
+    val arbMod       = Module(new RemainerSigned64ArbiterModule(numIPs = 1, dataWidth = 64))
+    val testFunction = Module(new RemainerSigned64FunctionModule(dataWidth = 64))
 
     // val modWrapper   = Module(new RemainerUnsigned64Wrapper(dataWidth = 64))
     // val arbMod       = Module(new RemainerUnsigned64ArbiterModule(numIPs = 1, dataWidth = 64))
@@ -129,9 +129,9 @@ class TestAllArbiter extends Module{
     // val arbMod       = Module(new UshrSigned64ArbiterModule(numIPs = 1, dataWidth = 64))
     // val testFunction = Module(new UshrSigned64FunctionModule(dataWidth = 64))
 
-    val modWrapper   = Module(new UshrUnsigned64Wrapper(dataWidth = 64))
-    val arbMod       = Module(new UshrUnsigned64ArbiterModule(numIPs = 1, dataWidth = 64))
-    val testFunction = Module(new UshrUnsigned64FunctionModule(dataWidth = 64))
+    // val modWrapper   = Module(new UshrUnsigned64Wrapper(dataWidth = 64))
+    // val arbMod       = Module(new UshrUnsigned64ArbiterModule(numIPs = 1, dataWidth = 64))
+    // val testFunction = Module(new UshrUnsigned64FunctionModule(dataWidth = 64))
 
     // val modWrapper   = Module(new XorSigned64Wrapper(dataWidth = 64))
     // val arbMod       = Module(new XorSigned64ArbiterModule(numIPs = 1, dataWidth = 64))

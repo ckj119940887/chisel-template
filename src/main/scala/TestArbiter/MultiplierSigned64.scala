@@ -5,29 +5,34 @@ import chisel3.util._
 import chisel3.experimental._
 
 
+class XilinxMultiplierSigned64Wrapper extends BlackBox with HasBlackBoxResource {
+  val io = IO(new Bundle {
+    val clk = Input(Bool())
+    val ce = Input(Bool())
+    val a = Input(SInt(64.W))
+    val b = Input(SInt(64.W))
+    val valid = Output(Bool())
+    val p = Output(SInt(64.W))
+  })
+
+  addResource("/verilog/XilinxMultiplierSigned64Wrapper.v")
+}
+
 class MultiplierSigned64(val width: Int = 64) extends Module {
-    val io = IO(new Bundle{
-        val a = Input(SInt(width.W))
-        val b = Input(SInt(width.W))
-        val start = Input(Bool())
-        val out = Output(SInt(width.W))
-        val valid = Output(Bool())
-    })
-
-    val r_start      = RegInit(false.B)
-    val r_start_next = RegInit(false.B)
-    val r_busy       = RegInit(true.B)
-
-    r_start      := io.start
-    r_start_next := r_start
-    when(r_start & ~r_start_next) {
-        r_busy := false.B
-    } .elsewhen(io.valid) {
-        r_busy := true.B
-    }
-
-    io.out := io.a * io.b
-    io.valid := r_start & ~r_busy
+  val io = IO(new Bundle {
+    val a = Input(SInt(width.W))
+    val b = Input(SInt(width.W))
+    val start = Input(Bool())
+    val out = Output(SInt(width.W))
+    val valid = Output(Bool())
+  })
+  val div = Module(new XilinxMultiplierSigned64Wrapper)
+  div.io.clk := clock.asBool
+  div.io.a := io.a
+  div.io.b := io.b
+  div.io.ce := io.start
+  io.valid := div.io.valid
+  io.out := div.io.p
 }
 
 
@@ -184,6 +189,16 @@ class MultiplierSigned64FunctionModule(dataWidth: Int) extends Module{
       }
     }
     is(1.U) {
+      r_arb_req_valid := true.B
+      r_arb_req.a     := 2.S
+      r_arb_req.b     := (-2).S
+      when(r_arb_resp_valid) {
+          r_res                := r_arb_resp.out
+          r_arb_req_valid := false.B
+          MultiplierSigned64CP := 2.U
+      }
+    }
+    is(2.U) {
       printf("result:%d\n", r_res)
     }
   }
