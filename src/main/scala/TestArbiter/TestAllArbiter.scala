@@ -9,9 +9,9 @@ class TestAllArbiter extends Module{
 
     })
 
-    // val modWrapper   = Module(new AdderSigned64Wrapper(dataWidth = 64))
-    // val arbMod       = Module(new AdderSigned64ArbiterModule(numIPs = 1, dataWidth = 64))
-    // val testFunction = Module(new AdderSigned64FunctionModule(dataWidth = 64))
+    val modWrapper   = Module(new AdderSigned64Wrapper(dataWidth = 64))
+    val arbMod       = Module(new AdderSigned64ArbiterModule(numIPs = 1, dataWidth = 64))
+    val testFunction = Module(new AdderSigned64FunctionModule(dataWidth = 64))
 
     // val modWrapper   = Module(new AdderUnsigned64Wrapper(dataWidth = 64))
     // val arbMod       = Module(new AdderUnsigned64ArbiterModule(numIPs = 1, dataWidth = 64))
@@ -93,9 +93,9 @@ class TestAllArbiter extends Module{
     // val arbMod       = Module(new OrUnsigned64ArbiterModule(numIPs = 1, dataWidth = 64))
     // val testFunction = Module(new OrUnsigned64FunctionModule(dataWidth = 64))
 
-    val modWrapper   = Module(new RemainerSigned64Wrapper(dataWidth = 64))
-    val arbMod       = Module(new RemainerSigned64ArbiterModule(numIPs = 1, dataWidth = 64))
-    val testFunction = Module(new RemainerSigned64FunctionModule(dataWidth = 64))
+    // val modWrapper   = Module(new RemainerSigned64Wrapper(dataWidth = 64))
+    // val arbMod       = Module(new RemainerSigned64ArbiterModule(numIPs = 1, dataWidth = 64))
+    // val testFunction = Module(new RemainerSigned64FunctionModule(dataWidth = 64))
 
     // val modWrapper   = Module(new RemainerUnsigned64Wrapper(dataWidth = 64))
     // val arbMod       = Module(new RemainerUnsigned64ArbiterModule(numIPs = 1, dataWidth = 64))
@@ -141,9 +141,13 @@ class TestAllArbiter extends Module{
     // val arbMod       = Module(new XorUnsigned64ArbiterModule(numIPs = 1, dataWidth = 64))
     // val testFunction = Module(new XorUnsigned64FunctionModule(dataWidth = 64))
 
-    // val modWrapper   = Module(new IndexerWrapper(dataWidth = 16))
-    // val arbMod       = Module(new IndexerArbiterModule(numIPs = 1, dataWidth = 16))
-    // val testFunction = Module(new IndexerFunctionModule(dataWidth = 16))
+    // val modWrapper   = Module(new IndexerWrapper(dataWidth = 8))
+    // val arbMod       = Module(new IndexerArbiterModule(numIPs = 1, dataWidth = 8))
+    // val testFunction = Module(new IndexerFunctionModule(dataWidth = 8))
+
+    // val modWrapper   = Module(new BlockMemoryWrapper(dataWidth = 64, depth = 200))
+    // val arbMod       = Module(new BlockMemoryArbiterModule(numIPs = 1, dataWidth = 64, depth = 200))
+    // val testFunction = Module(new BlockMemoryFunctionModule(dataWidth = 64, depth = 200))
 
     arbMod.io.ip.req  <> modWrapper.io.req
     arbMod.io.ip.resp <> modWrapper.io.resp

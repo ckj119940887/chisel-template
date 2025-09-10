@@ -5,19 +5,6 @@ import chisel3.util._
 import chisel3.experimental._
 
 
-class XilinxAdderSigned64Wrapper extends BlackBox with HasBlackBoxResource {
-  val io = IO(new Bundle {
-    val clk = Input(Bool())
-    val ce = Input(Bool())
-    val A = Input(SInt(64.W))
-    val B = Input(SInt(64.W))
-    val valid = Output(Bool())
-    val S = Output(SInt(64.W))
-  })
-
-  addResource("/verilog/XilinxAdderSigned64Wrapper.v")
-}
-
 class AdderSigned64(val width: Int = 64) extends Module {
     val io = IO(new Bundle{
         val a = Input(SInt(width.W))
@@ -134,6 +121,7 @@ class AdderSigned64Wrapper(val dataWidth: Int ) extends Module {
 
     val r_req            = Reg(new AdderSigned64RequestBundle(dataWidth))
     val r_req_valid      = RegNext(io.req.valid, false.B)
+
 
 
     val r_resp_data  = RegNext(mod.io.out)

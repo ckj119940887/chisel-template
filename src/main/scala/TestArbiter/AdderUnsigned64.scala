@@ -5,19 +5,6 @@ import chisel3.util._
 import chisel3.experimental._
 
 
-class XilinxAdderUnsigned64Wrapper extends BlackBox with HasBlackBoxResource {
-  val io = IO(new Bundle {
-    val clk = Input(Bool())
-    val ce = Input(Bool())
-    val A = Input(UInt(64.W))
-    val B = Input(UInt(64.W))
-    val valid = Output(Bool())
-    val S = Output(UInt(64.W))
-  })
-
-  addResource("/verilog/XilinxAdderUnsigned64Wrapper.v")
-}
-
 class AdderUnsigned64(val width: Int = 64) extends Module {
     val io = IO(new Bundle{
         val a = Input(UInt(width.W))
@@ -136,6 +123,7 @@ class AdderUnsigned64Wrapper(val dataWidth: Int ) extends Module {
     val r_req_valid      = RegNext(io.req.valid, false.B)
 
 
+
     val r_resp_data  = RegNext(mod.io.out)
     val r_resp_valid = RegNext(mod.io.valid)
 
@@ -180,25 +168,15 @@ class AdderUnsigned64FunctionModule(dataWidth: Int) extends Module{
   switch(AdderUnsigned64CP) {
     is(0.U) {
       r_arb_req_valid := true.B
-      r_arb_req.a     := 2.U
-      r_arb_req.b     := 3.U
+      //r_arb_req.a     := 1.S
+      //r_arb_req.b     := (-2).S
       when(r_arb_resp_valid) {
-          r_res                := r_arb_resp.out
+          //r_res                := r_arb_resp.out
           r_arb_req_valid := false.B
           AdderUnsigned64CP := 1.U
       }
     }
     is(1.U) {
-      r_arb_req_valid := true.B
-      r_arb_req.a     := 3.U
-      r_arb_req.b     := 3.U
-      when(r_arb_resp_valid) {
-          r_res                := r_arb_resp.out
-          r_arb_req_valid := false.B
-          AdderUnsigned64CP := 2.U
-      }
-    }
-    is(2.U) {
       printf("result:%d\n", r_res)
     }
   }
