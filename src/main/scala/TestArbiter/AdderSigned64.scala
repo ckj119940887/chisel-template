@@ -144,6 +144,8 @@ class AdderSigned64Wrapper(val dataWidth: Int ) extends Module {
     mod.io.start := r_mod_start
     io.resp.bits.out := r_resp_data
     io.resp.valid    := r_resp_valid
+
+
 }
 
 
@@ -178,7 +180,7 @@ class AdderSigned64FunctionModule(dataWidth: Int) extends Module{
     }
     is(1.U) {
       r_arb_req_valid := true.B
-      r_arb_req.a     := 2.S
+      r_arb_req.a     := (-2).S
       r_arb_req.b     := (-2).S
       when(r_arb_resp_valid) {
           r_res                := r_arb_resp.out
