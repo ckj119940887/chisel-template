@@ -5,37 +5,38 @@ import chisel3.util._
 import chisel3.experimental._
 
 
-class BlockMemory( val C_M_AXI_DATA_WIDTH: Int,
-                     val MEMORY_DEPTH: Int,
-                     val C_M_TARGET_SLAVE_BASE_ADDR: BigInt = 0x0) extends Module {
+class BlockMemory(val C_M_AXI_DATA_WIDTH: Int,
+                    val C_M_AXI_ADDR_WIDTH: Int,
+                    val MEMORY_DEPTH: Int,
+                    val C_M_TARGET_SLAVE_BASE_ADDR: BigInt = 0x0) extends Module {
 
   val io = IO(new Bundle{
     val mode = Input(UInt(2.W)) // 00 -> disable, 01 -> read, 10 -> write, 11 -> DMA
 
     // Byte level read/write port
-    val readAddr    = Input(UInt(log2Up(MEMORY_DEPTH).W))
-    val readOffset  = Input(UInt(log2Up(MEMORY_DEPTH).W))
+    val readAddr    = Input(UInt(C_M_AXI_ADDR_WIDTH.W))
+    val readOffset  = Input(UInt(C_M_AXI_ADDR_WIDTH.W))
     val readLen     = Input(UInt(log2Up(C_M_AXI_DATA_WIDTH / 8 + 1).W))
     val readData    = Output(UInt(C_M_AXI_DATA_WIDTH.W))
     val readValid   = Output(Bool())
 
-    val writeAddr   = Input(UInt(log2Up(MEMORY_DEPTH).W))
-    val writeOffset = Input(UInt(log2Up(MEMORY_DEPTH).W))
+    val writeAddr   = Input(UInt(C_M_AXI_ADDR_WIDTH.W))
+    val writeOffset = Input(UInt(C_M_AXI_ADDR_WIDTH.W))
     val writeLen    = Input(UInt(log2Up(C_M_AXI_DATA_WIDTH / 8 + 1).W))
     val writeData   = Input(UInt(C_M_AXI_DATA_WIDTH.W))
     val writeValid  = Output(Bool())
 
     // DMA
-    val dmaSrcAddr   = Input(UInt(log2Up(MEMORY_DEPTH).W))  // byte address
-    val dmaDstAddr   = Input(UInt(log2Up(MEMORY_DEPTH).W))  // byte address
-    val dmaDstOffset = Input(UInt(log2Up(MEMORY_DEPTH).W))
+    val dmaSrcAddr   = Input(UInt(C_M_AXI_ADDR_WIDTH.W))  // byte address
+    val dmaDstAddr   = Input(UInt(C_M_AXI_ADDR_WIDTH.W))  // byte address
+    val dmaDstOffset = Input(UInt(C_M_AXI_ADDR_WIDTH.W))
     val dmaSrcLen    = Input(UInt(log2Up(MEMORY_DEPTH).W)) // byte count
     val dmaDstLen    = Input(UInt(log2Up(MEMORY_DEPTH).W)) // byte count
     val dmaValid     = Output(Bool())
 
     // master write address channel
     val M_AXI_AWID    = Output(UInt(1.W))
-    val M_AXI_AWADDR  = Output(UInt(log2Up(MEMORY_DEPTH).W))
+    val M_AXI_AWADDR  = Output(UInt(C_M_AXI_ADDR_WIDTH.W))
     val M_AXI_AWLEN   = Output(UInt(8.W))
     val M_AXI_AWSIZE  = Output(UInt(3.W))
     val M_AXI_AWBURST = Output(UInt(2.W))
@@ -64,7 +65,7 @@ class BlockMemory( val C_M_AXI_DATA_WIDTH: Int,
 
     // master read address channel
     val M_AXI_ARID    = Output(UInt(1.W))
-    val M_AXI_ARADDR  = Output(UInt(log2Up(MEMORY_DEPTH).W))
+    val M_AXI_ARADDR  = Output(UInt(C_M_AXI_ADDR_WIDTH.W))
     val M_AXI_ARLEN   = Output(UInt(8.W))
     val M_AXI_ARSIZE  = Output(UInt(3.W))
     val M_AXI_ARBURST = Output(UInt(2.W))
@@ -89,7 +90,7 @@ class BlockMemory( val C_M_AXI_DATA_WIDTH: Int,
   // registers for diff channels
   // write address channel
   val r_m_axi_awvalid = RegInit(false.B)
-  val r_m_axi_awaddr  = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
+  val r_m_axi_awaddr  = RegInit(0.U(C_M_AXI_ADDR_WIDTH.W))
   val r_m_axi_awlen   = RegInit(0.U(8.W))
 
   // write data channel
@@ -105,7 +106,7 @@ class BlockMemory( val C_M_AXI_DATA_WIDTH: Int,
 
   // read address channel
   val r_m_axi_arvalid = RegInit(false.B)
-  val r_m_axi_araddr  = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
+  val r_m_axi_araddr  = RegInit(0.U(C_M_AXI_ADDR_WIDTH.W))
   val r_m_axi_arlen   = RegInit(0.U(8.W))
 
   // read data channel
@@ -188,7 +189,7 @@ class BlockMemory( val C_M_AXI_DATA_WIDTH: Int,
   val r_write_data_1      = RegInit(0.U((2 * C_M_AXI_DATA_WIDTH).W))
   val r_write_data_2      = RegInit(0.U((2 * C_M_AXI_DATA_WIDTH).W))
   val r_write_addr        = RegNext(io.writeAddr + io.writeOffset, init = 0.U)
-  val r_write_req_next    = RegNext(r_write_req, init=false.B)
+  val r_write_req_next    = RegNext(r_write_req, init = false.B)
   val r_write_running     = RegInit(false.B)
   val r_write_offset      = RegInit(0.U(3.W))
   val r_aw_enable         = RegInit(false.B)
@@ -296,10 +297,10 @@ class BlockMemory( val C_M_AXI_DATA_WIDTH: Int,
   }
 
   // dma logic
-  val r_dma_req_next     = RegNext(r_dma_req, init= false.B)
-  val r_dmaSrc_addr      = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
+  val r_dma_req_next     = RegNext(r_dma_req)
+  val r_dmaSrc_addr      = RegInit(0.U(C_M_AXI_ADDR_WIDTH.W))
   val r_dmaSrc_len       = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
-  val r_dmaDst_addr      = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
+  val r_dmaDst_addr      = RegInit(0.U(C_M_AXI_ADDR_WIDTH.W))
   val r_dmaDst_len       = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
   val r_dma_read_data    = RegInit(0.U(C_M_AXI_DATA_WIDTH.W))
   val r_dma_status       = RegInit(0.U(2.W)) // 0.U - Idle, 1.U - read, 2.U - write
@@ -309,7 +310,7 @@ class BlockMemory( val C_M_AXI_DATA_WIDTH: Int,
   val r_dmaRead_running  = RegInit(false.B)
   val r_dmaWrite_running = RegInit(false.B)
 
-  io.dmaValid := RegNext(r_dma_req & (r_dma_status === 3.U))
+  io.dmaValid := RegNext(r_dma_req & (r_dma_status === 3.U), init = false.B)
 
   when(r_dma_req & ~r_dma_req_next) {
     r_dmaSrc_addr      := io.dmaSrcAddr
@@ -378,7 +379,7 @@ class BlockMemory( val C_M_AXI_DATA_WIDTH: Int,
   io.M_AXI_AWPROT  := 0.U
   io.M_AXI_AWQOS   := 0.U
   io.M_AXI_AWUSER  := 0.U
-  io.M_AXI_AWADDR  := Cat(r_m_axi_awaddr(log2Up(MEMORY_DEPTH) - 1, 3), 0.U(3.W))
+  io.M_AXI_AWADDR  := Cat(r_m_axi_awaddr(C_M_AXI_ADDR_WIDTH - 1, 3), 0.U(3.W))
   io.M_AXI_AWVALID := r_m_axi_awvalid
 
   io.M_AXI_WSTRB   := r_m_axi_wstrb
@@ -398,26 +399,26 @@ class BlockMemory( val C_M_AXI_DATA_WIDTH: Int,
   io.M_AXI_ARPROT  := 0.U
   io.M_AXI_ARQOS   := 0.U
   io.M_AXI_ARUSER  := 0.U
-  io.M_AXI_ARADDR  := Cat(r_m_axi_araddr(log2Up(MEMORY_DEPTH) - 1, 3), 0.U(3.W))
+  io.M_AXI_ARADDR  := Cat(r_m_axi_araddr(C_M_AXI_ADDR_WIDTH - 1, 3), 0.U(3.W))
   io.M_AXI_ARVALID := r_m_axi_arvalid
 
   io.M_AXI_RREADY  := true.B
 }
 
 
-class BlockMemoryRequestBundle(dataWidth: Int, depth: Int) extends Bundle {
+class BlockMemoryRequestBundle(dataWidth: Int, addrWidth: Int, depth: Int) extends Bundle {
 
   val mode         = UInt(2.W)
-  val readAddr     = UInt(log2Up(depth).W)
-  val readOffset   = UInt(log2Up(depth).W)
+  val readAddr     = UInt(addrWidth.W)
+  val readOffset   = UInt(addrWidth.W)
   val readLen      = UInt(4.W)
-  val writeAddr    = UInt(log2Up(depth).W)
-  val writeOffset  = UInt(log2Up(depth).W)
+  val writeAddr    = UInt(addrWidth.W)
+  val writeOffset  = UInt(addrWidth.W)
   val writeLen     = UInt(4.W)
   val writeData    = UInt(dataWidth.W)
-  val dmaSrcAddr   = UInt(log2Up(depth).W)
-  val dmaDstAddr   = UInt(log2Up(depth).W)
-  val dmaDstOffset = UInt(log2Up(depth).W)
+  val dmaSrcAddr   = UInt(addrWidth.W)
+  val dmaDstAddr   = UInt(addrWidth.W)
+  val dmaDstOffset = UInt(addrWidth.W)
   val dmaSrcLen    = UInt(log2Up(depth).W)
   val dmaDstLen    = UInt(log2Up(depth).W)
 
@@ -429,27 +430,27 @@ class BlockMemoryResponseBundle(dataWidth: Int) extends Bundle {
 }
 
 
-class BlockMemoryIO(dataWidth: Int, depth: Int) extends Bundle {
-  val req = Valid(new BlockMemoryRequestBundle(dataWidth, depth))
+class BlockMemoryIO(dataWidth: Int, addrWidth: Int, depth: Int) extends Bundle {
+  val req = Valid(new BlockMemoryRequestBundle(dataWidth, addrWidth, depth))
   val resp = Flipped(Valid(new BlockMemoryResponseBundle(dataWidth)))
 }
 
 
-class BlockMemoryArbiterIO(numIPs: Int, dataWidth: Int, depth: Int) extends Bundle {
-  val ipReqs  = Flipped(Vec(numIPs, Valid(new BlockMemoryRequestBundle(dataWidth, depth))))
+class BlockMemoryArbiterIO(numIPs: Int, dataWidth: Int, addrWidth: Int, depth: Int) extends Bundle {
+  val ipReqs  = Flipped(Vec(numIPs, Valid(new BlockMemoryRequestBundle(dataWidth, addrWidth, depth))))
   val ipResps = Vec(numIPs, Valid(new BlockMemoryResponseBundle(dataWidth)))
-  val ip      = new BlockMemoryIO(dataWidth, depth)
+  val ip      = new BlockMemoryIO(dataWidth, addrWidth, depth)
 }
 
 
-class BlockMemoryArbiterModule(numIPs: Int, dataWidth: Int, depth: Int) extends Module {
-  val io = IO(new BlockMemoryArbiterIO(numIPs, dataWidth, depth))
+class BlockMemoryArbiterModule(numIPs: Int, dataWidth: Int, addrWidth: Int, depth: Int) extends Module {
+  val io = IO(new BlockMemoryArbiterIO(numIPs, dataWidth, addrWidth, depth))
 
   // ------------------ Stage 0: Input Cache ------------------
   val r_ipReq_valid = RegInit(VecInit(Seq.fill(numIPs)(false.B)))
   val r_ipReq_valid_next = RegInit(VecInit(Seq.fill(numIPs)(false.B)))
   val r_ipReq_enable = RegInit(VecInit(Seq.fill(numIPs)(false.B)))
-  val r_ipReq_bits = RegInit(VecInit(Seq.fill(numIPs)(0.U.asTypeOf(new BlockMemoryRequestBundle(dataWidth, depth)))))
+  val r_ipReq_bits = RegInit(VecInit(Seq.fill(numIPs)(0.U.asTypeOf(new BlockMemoryRequestBundle(dataWidth, addrWidth, depth)))))
 
   for (i <- 0 until numIPs) {
     r_ipReq_valid(i) := io.ipReqs(i).valid
@@ -464,7 +465,7 @@ class BlockMemoryArbiterModule(numIPs: Int, dataWidth: Int, depth: Int) extends 
 
   // ------------------ Stage 1: Arbitration Decision Pipeline ------------------
   val r_foundReq = RegInit(false.B)
-  val r_reqBits  = RegInit(0.U.asTypeOf(new BlockMemoryRequestBundle(dataWidth, depth)))
+  val r_reqBits  = RegInit(0.U.asTypeOf(new BlockMemoryRequestBundle(dataWidth, addrWidth, depth)))
   val r_chosen   = RegInit(0.U(log2Up(numIPs).W))
 
   r_foundReq := r_ipReq_enable.reduce(_ || _)
@@ -480,7 +481,7 @@ class BlockMemoryArbiterModule(numIPs: Int, dataWidth: Int, depth: Int) extends 
 
   // ------------------ Stage 2: memory.resp handling ------------------
   val r_mem_resp_valid = RegNext(io.ip.resp.valid, init = false.B)
-  val r_mem_resp_bits  = RegNext(io.ip.resp.bits, init = 0.U.asTypeOf(new BlockMemoryResponseBundle(dataWidth)))
+  val r_mem_resp_bits  = RegNext(io.ip.resp.bits)
   val r_mem_resp_id    = RegNext(r_chosen, init = 0.U)
 
   val r_ipResp_valid = RegInit(VecInit(Seq.fill(numIPs)(false.B)))
@@ -505,14 +506,14 @@ class BlockMemoryArbiterModule(numIPs: Int, dataWidth: Int, depth: Int) extends 
 }
 
 
-class BlockMemoryWrapper(val dataWidth: Int , depth: Int) extends Module {
+class BlockMemoryWrapper(val dataWidth: Int , addrWidth: Int, depth: Int) extends Module {
     val io = IO(new Bundle{
-        val req = Input(Valid(new BlockMemoryRequestBundle(dataWidth, depth)))
+        val req = Input(Valid(new BlockMemoryRequestBundle(dataWidth, addrWidth, depth)))
         val resp = Output(Valid(new BlockMemoryResponseBundle(dataWidth)))
 
         // master write address channel
         val M_AXI_AWID    = Output(UInt(1.W))
-        val M_AXI_AWADDR  = Output(UInt(log2Up(depth).W))
+        val M_AXI_AWADDR  = Output(UInt(addrWidth.W))
         val M_AXI_AWLEN   = Output(UInt(8.W))
         val M_AXI_AWSIZE  = Output(UInt(3.W))
         val M_AXI_AWBURST = Output(UInt(2.W))
@@ -541,7 +542,7 @@ class BlockMemoryWrapper(val dataWidth: Int , depth: Int) extends Module {
 
         // master read address channel
         val M_AXI_ARID    = Output(UInt(1.W))
-        val M_AXI_ARADDR  = Output(UInt(log2Up(depth).W))
+        val M_AXI_ARADDR  = Output(UInt(addrWidth.W))
         val M_AXI_ARLEN   = Output(UInt(8.W))
         val M_AXI_ARSIZE  = Output(UInt(3.W))
         val M_AXI_ARBURST = Output(UInt(2.W))
@@ -564,20 +565,23 @@ class BlockMemoryWrapper(val dataWidth: Int , depth: Int) extends Module {
 
     })
 
-    val mod = Module(new BlockMemory(dataWidth, depth))
+    val mod = Module(new BlockMemory(dataWidth, addrWidth, depth))
 
-    val r_req            = RegInit(0.U.asTypeOf(new BlockMemoryRequestBundle(dataWidth, depth)))
-    val r_req_valid      = RegNext(io.req.valid, false.B)
-    val r_req_valid_next = RegNext(r_req_valid, false.B)
+    val r_req            = RegInit(0.U.asTypeOf(new BlockMemoryRequestBundle(dataWidth, addrWidth, depth)))
+    val r_req_valid      = RegNext(io.req.valid, init = false.B)
+    val r_req_valid_next = RegNext(r_req_valid, init = false.B)
 
-    val memory_valid = WireInit(false.B)
-    memory_valid := mod.io.readValid | mod.io.writeValid | mod.io.dmaValid
-    val r_resp_data  = RegNext(mod.io.readData, init = 0.U)
+    val memory_valid = mod.io.readValid | mod.io.writeValid | mod.io.dmaValid
+    val r_resp_data  = RegNext(mod.io.readData)
     val r_resp_valid = RegNext(memory_valid, init = false.B)
 
 
     val r_mode = RegInit(0.U(2.W))
-    r_mode := Mux(r_req_valid & ~memory_valid, r_req.mode, 0.U)
+    when(memory_valid) {
+      r_mode := 0.U
+    } .elsewhen(r_req_valid) {
+      r_mode := r_req.mode
+    }
 
 
     r_req := io.req.bits
@@ -650,13 +654,13 @@ class BlockMemoryWrapper(val dataWidth: Int , depth: Int) extends Module {
 }
 
 
-class BlockMemoryFunctionModule(dataWidth: Int, depth: Int) extends Module{
+class BlockMemoryFunctionModule(dataWidth: Int, addrWidth: Int, depth: Int) extends Module{
   val io = IO(new Bundle{
-    val arb_req  = Valid(new BlockMemoryRequestBundle(dataWidth, depth))
+    val arb_req  = Valid(new BlockMemoryRequestBundle(dataWidth, addrWidth, depth))
     val arb_resp = Flipped(Valid(new BlockMemoryResponseBundle(dataWidth)))
   })
 
-  val r_arb_req          = RegInit(0.U.asTypeOf(new BlockMemoryRequestBundle(dataWidth, depth)))
+  val r_arb_req          = RegInit(0.U.asTypeOf(new BlockMemoryRequestBundle(dataWidth, addrWidth, depth)))
   val r_arb_req_valid    = RegInit(false.B)
   val r_arb_resp         = RegInit(0.U.asTypeOf(new BlockMemoryResponseBundle(dataWidth)))
   val r_arb_resp_valid   = RegInit(false.B)
@@ -666,7 +670,7 @@ class BlockMemoryFunctionModule(dataWidth: Int, depth: Int) extends Module{
   io.arb_req.valid := r_arb_req_valid
 
   val BlockMemoryCP            = RegInit(0.U(4.W))
-  val r_res            = RegInit(0.U(dataWidth.W))
+  val r_res            = Reg(UInt(dataWidth.W))
 
   switch(BlockMemoryCP) {
     is(0.U) {

@@ -54,7 +54,7 @@ class AdderSigned64ArbiterModule(numIPs: Int, dataWidth: Int) extends Module {
   val r_ipReq_valid = RegInit(VecInit(Seq.fill(numIPs)(false.B)))
   val r_ipReq_valid_next = RegInit(VecInit(Seq.fill(numIPs)(false.B)))
   val r_ipReq_enable = RegInit(VecInit(Seq.fill(numIPs)(false.B)))
-  val r_ipReq_bits = Reg(Vec(numIPs, new AdderSigned64RequestBundle(dataWidth)))
+  val r_ipReq_bits = RegInit(VecInit(Seq.fill(numIPs)(0.U.asTypeOf(new AdderSigned64RequestBundle(dataWidth)))))
 
   for (i <- 0 until numIPs) {
     r_ipReq_valid(i) := io.ipReqs(i).valid
@@ -69,8 +69,8 @@ class AdderSigned64ArbiterModule(numIPs: Int, dataWidth: Int) extends Module {
 
   // ------------------ Stage 1: Arbitration Decision Pipeline ------------------
   val r_foundReq = RegInit(false.B)
-  val r_reqBits  = Reg(new AdderSigned64RequestBundle(dataWidth))
-  val r_chosen   = Reg(UInt(log2Ceil(numIPs).W))
+  val r_reqBits  = RegInit(0.U.asTypeOf(new AdderSigned64RequestBundle(dataWidth)))
+  val r_chosen   = RegInit(0.U(log2Up(numIPs).W))
 
   r_foundReq := r_ipReq_enable.reduce(_ || _)
   for (i <- 0 until numIPs) {
@@ -84,12 +84,12 @@ class AdderSigned64ArbiterModule(numIPs: Int, dataWidth: Int) extends Module {
   io.ip.req.bits  := r_reqBits
 
   // ------------------ Stage 2: memory.resp handling ------------------
-  val r_mem_resp_valid = RegNext(io.ip.resp.valid)
+  val r_mem_resp_valid = RegNext(io.ip.resp.valid, init = false.B)
   val r_mem_resp_bits  = RegNext(io.ip.resp.bits)
-  val r_mem_resp_id    = RegNext(r_chosen)
+  val r_mem_resp_id    = RegNext(r_chosen, init = 0.U)
 
   val r_ipResp_valid = RegInit(VecInit(Seq.fill(numIPs)(false.B)))
-  val r_ipResp_bits  = Reg(Vec(numIPs, new AdderSigned64ResponseBundle(dataWidth)))
+  val r_ipResp_bits  = RegInit(VecInit(Seq.fill(numIPs)(0.U.asTypeOf(new AdderSigned64ResponseBundle(dataWidth)))))
 
   for (i <- 0 until numIPs) {
     r_ipResp_valid(i)    := false.B
@@ -119,13 +119,13 @@ class AdderSigned64Wrapper(val dataWidth: Int ) extends Module {
 
     val mod = Module(new AdderSigned64(dataWidth))
 
-    val r_req            = Reg(new AdderSigned64RequestBundle(dataWidth))
-    val r_req_valid      = RegNext(io.req.valid, false.B)
+    val r_req            = RegInit(0.U.asTypeOf(new AdderSigned64RequestBundle(dataWidth)))
+    val r_req_valid      = RegNext(io.req.valid, init = false.B)
 
 
 
     val r_resp_data  = RegNext(mod.io.out)
-    val r_resp_valid = RegNext(mod.io.valid)
+    val r_resp_valid = RegNext(mod.io.valid, init = false.B)
 
 
     val r_mod_start = RegInit(false.B)
@@ -155,9 +155,9 @@ class AdderSigned64FunctionModule(dataWidth: Int) extends Module{
     val arb_resp = Flipped(Valid(new AdderSigned64ResponseBundle(dataWidth)))
   })
 
-  val r_arb_req          = Reg(new AdderSigned64RequestBundle(dataWidth))
+  val r_arb_req          = RegInit(0.U.asTypeOf(new AdderSigned64RequestBundle(dataWidth)))
   val r_arb_req_valid    = RegInit(false.B)
-  val r_arb_resp         = Reg(new AdderSigned64ResponseBundle(dataWidth))
+  val r_arb_resp         = RegInit(0.U.asTypeOf(new AdderSigned64ResponseBundle(dataWidth)))
   val r_arb_resp_valid   = RegInit(false.B)
   r_arb_resp       := io.arb_resp.bits
   r_arb_resp_valid := io.arb_resp.valid
@@ -180,7 +180,7 @@ class AdderSigned64FunctionModule(dataWidth: Int) extends Module{
     }
     is(1.U) {
       r_arb_req_valid := true.B
-      r_arb_req.a     := (-2).S
+      r_arb_req.a     := 2.S
       r_arb_req.b     := (-2).S
       when(r_arb_resp_valid) {
           r_res                := r_arb_resp.out

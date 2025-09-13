@@ -12,13 +12,13 @@ object TestArbiterVerilogGeneration extends App {
 object TestMemoryArbiterVerilogGeneration extends App {  
   (new ChiselStage).execute(
     Array("--target-dir", "generated_verilog"),
-    Seq(ChiselGeneratorAnnotation(() => new TestMemoryArbiter(dataWidth = 64, depth = 200)))
+    Seq(ChiselGeneratorAnnotation(() => new TestMemoryArbiter(dataWidth = 64, addrWidth = 16, depth = 200)))
   )
 }
 
-object TestBlockMemoryVerilogGeneration extends App {  
-  (new ChiselStage).execute(
-    Array("--target-dir", "generated_verilog"),
-    Seq(ChiselGeneratorAnnotation(() => new TestBlockMemory(dataWidth = 64, depth = 200)))
-  )
-}
+// object TestOnlyBlockMemoryVerilogGeneration extends App {  
+//   (new ChiselStage).execute(
+//     Array("--target-dir", "generated_verilog"),
+//     Seq(ChiselGeneratorAnnotation(() => new TestOnlyBlockMemory(dataWidth = 64, depth = 200)))
+//   )
+// }

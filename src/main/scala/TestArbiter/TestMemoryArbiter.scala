@@ -4,11 +4,11 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental._
 
-class TestMemoryArbiter(val dataWidth: Int , depth: Int) extends Module{
+class TestMemoryArbiter(val dataWidth: Int, val addrWidth: Int, depth: Int) extends Module{
     val io = IO(new Bundle{
         // master write address channel
         val M_AXI_AWID    = Output(UInt(1.W))
-        val M_AXI_AWADDR  = Output(UInt(log2Up(depth).W))
+        val M_AXI_AWADDR  = Output(UInt(addrWidth.W))
         val M_AXI_AWLEN   = Output(UInt(8.W))
         val M_AXI_AWSIZE  = Output(UInt(3.W))
         val M_AXI_AWBURST = Output(UInt(2.W))
@@ -37,7 +37,7 @@ class TestMemoryArbiter(val dataWidth: Int , depth: Int) extends Module{
 
         // master read address channel
         val M_AXI_ARID    = Output(UInt(1.W))
-        val M_AXI_ARADDR  = Output(UInt(log2Up(depth).W))
+        val M_AXI_ARADDR  = Output(UInt(addrWidth.W))
         val M_AXI_ARLEN   = Output(UInt(8.W))
         val M_AXI_ARSIZE  = Output(UInt(3.W))
         val M_AXI_ARBURST = Output(UInt(2.W))
@@ -59,9 +59,9 @@ class TestMemoryArbiter(val dataWidth: Int , depth: Int) extends Module{
         val M_AXI_RREADY = Output(Bool())
     })
 
-    val modWrapper   = Module(new BlockMemoryWrapper(dataWidth = 64, depth = 200))
-    val arbMod       = Module(new BlockMemoryArbiterModule(numIPs = 1, dataWidth = 64, depth = 200))
-    val testFunction = Module(new BlockMemoryFunctionModule(dataWidth = 64, depth = 200))
+    val modWrapper   = Module(new BlockMemoryWrapper(dataWidth = 64, addrWidth = 16, depth = 200))
+    val arbMod       = Module(new BlockMemoryArbiterModule(numIPs = 1, dataWidth = 64, addrWidth = 16, depth = 200))
+    val testFunction = Module(new BlockMemoryFunctionModule(dataWidth = 64, addrWidth = 16, depth = 200))
 
     arbMod.io.ip.req  <> modWrapper.io.req
     arbMod.io.ip.resp <> modWrapper.io.resp
@@ -116,8 +116,8 @@ class TestMemoryArbiter(val dataWidth: Int , depth: Int) extends Module{
     modWrapper.io.M_AXI_RVALID := io.M_AXI_RVALID
     io.M_AXI_RREADY            := modWrapper.io.M_AXI_RREADY
 }
-
-class TestBlockMemory(val dataWidth: Int, val depth: Int) extends Module {
+/*
+class TestOnlyBlockMemory(val dataWidth: Int, val depth: Int) extends Module {
 
     val io = IO(new Bundle{
         // master write address channel
@@ -171,9 +171,116 @@ class TestBlockMemory(val dataWidth: Int, val depth: Int) extends Module {
         val M_AXI_RUSER  = Input(UInt(1.W))
         val M_AXI_RVALID = Input(Bool())
         val M_AXI_RREADY = Output(Bool())
+
+        // write address channel
+        val M_LITE_AXI_AWADDR  = Output(UInt(16.W))
+        val M_LITE_AXI_AWPROT  = Output(UInt(3.W))
+        val M_LITE_AXI_AWVALID = Output(Bool())
+        val M_LITE_AXI_AWREADY = Input(Bool())
+    
+        // write data channel
+        val M_LITE_AXI_WDATA  = Output(UInt(32.W))
+        val M_LITE_AXI_WSTRB  = Output(UInt((32/8).W))
+        val M_LITE_AXI_WVALID = Output(Bool())
+        val M_LITE_AXI_WREADY = Input(Bool())
+    
+        // write response channel
+        val M_LITE_AXI_BRESP  = Input(UInt(2.W))
+        val M_LITE_AXI_BVALID = Input(Bool())
+        val M_LITE_AXI_BREADY = Output(Bool())
+    
+        // read address channel
+        val M_LITE_AXI_ARADDR  = Output(UInt(16.W))
+        val M_LITE_AXI_ARPROT  = Output(UInt(3.W))
+        val M_LITE_AXI_ARVALID = Output(Bool())
+        val M_LITE_AXI_ARREADY = Input(Bool())
+    
+        // read data channel
+        val M_LITE_AXI_RDATA  = Input(UInt(32.W))
+        val M_LITE_AXI_RRESP  = Input(UInt(2.W))
+        val M_LITE_AXI_RVALID = Input(Bool())
+        val M_LITE_AXI_RREADY = Output(Bool())
     })
 
-    val mod = Module(new BlockMemory(C_M_AXI_DATA_WIDTH = dataWidth,
+    val r_m_lite_axi_awaddr  = RegInit(0.U(16.W))
+    val r_m_lite_axi_awvalid = RegInit(false.B)
+    val r_m_lite_axi_wdata   = RegInit(0.U(32.W))
+    val r_m_lite_axi_wstrb   = RegInit("b1111".U((32/8).W))
+    val r_m_lite_axi_wvalid  = RegInit(false.B)
+    val r_m_lite_axi_bready  = RegInit(false.B)
+    val r_m_lite_axi_araddr  = RegInit(0.U(16.W))
+    val r_m_lite_axi_arvalid = RegInit(false.B)
+    val r_m_lite_axi_rready  = RegInit(false.B)
+
+    io.M_LITE_AXI_AWADDR  := r_m_lite_axi_awaddr
+    io.M_LITE_AXI_AWPROT  := 0.U
+    io.M_LITE_AXI_AWVALID := r_m_lite_axi_awvalid
+
+    io.M_LITE_AXI_WDATA   := r_m_lite_axi_wdata 
+    io.M_LITE_AXI_WSTRB   := r_m_lite_axi_wstrb
+    io.M_LITE_AXI_WVALID  := r_m_lite_axi_wvalid 
+
+    io.M_LITE_AXI_BREADY  := r_m_lite_axi_bready
+
+    io.M_LITE_AXI_ARADDR  := r_m_lite_axi_araddr 
+    io.M_LITE_AXI_ARPROT  := 0.U
+    io.M_LITE_AXI_ARVALID := r_m_lite_axi_arvalid
+
+    io.M_LITE_AXI_RREADY  := r_m_lite_axi_rready
+
+    val r_lite_aw_fire = r_m_lite_axi_awvalid & io.M_LITE_AXI_AWREADY
+
+    val r_lite_w_fire = r_m_lite_axi_wvalid & io.M_LITE_AXI_WREADY
+
+    val r_lite_b_fire = r_m_lite_axi_bready & io.M_LITE_AXI_BVALID
+
+    val r_lite_ar_fire = r_m_lite_axi_arvalid & io.M_LITE_AXI_ARREADY
+
+    val r_lite_r_fire = r_m_lite_axi_rready & io.M_LITE_AXI_RVALID
+
+    val liteCP = RegInit(0.U(4.W))
+    val r_lite_res = RegInit(0.U(32.W))
+    switch(liteCP) {
+      is(0.U) {
+        r_m_lite_axi_awaddr  := 0.U
+        r_m_lite_axi_awvalid := true.B
+        r_m_lite_axi_wdata  := "h01020304".U
+        r_m_lite_axi_wvalid := true.B
+        when(r_lite_aw_fire & r_lite_w_fire) {
+          liteCP := 1.U
+          r_m_lite_axi_bready  := true.B
+          r_m_lite_axi_awvalid := false.B
+          r_m_lite_axi_wvalid  := false.B
+        }
+      }
+      is(1.U) {
+        when(r_lite_b_fire) {
+          liteCP := 2.U
+        }
+      }
+      is(2.U) {
+        r_m_lite_axi_araddr  := 0.U
+        r_m_lite_axi_arvalid := true.B
+        when(r_lite_ar_fire) {
+          liteCP := 3.U
+          r_m_lite_axi_arvalid := false.B
+          r_m_lite_axi_rready := true.B
+        }
+      }
+      is(3.U) {
+        when(r_lite_r_fire) {
+          liteCP := 4.U
+          r_lite_res := io.M_LITE_AXI_RDATA
+        }
+      }
+      is(4.U) {
+        printf("%d\n", r_lite_res)
+      }
+    }
+
+
+    val mod = Module(new BlockMemory(C_M_AXI_ADDR_WIDTH = 16,
+                                     C_M_AXI_DATA_WIDTH = dataWidth,
                                      MEMORY_DEPTH = depth,
                                      C_M_TARGET_SLAVE_BASE_ADDR = 0x0) )
 
@@ -195,6 +302,7 @@ class TestBlockMemory(val dataWidth: Int, val depth: Int) extends Module {
     val r_res            = Reg(UInt(dataWidth.W))
 
   switch(BlockMemoryCP) {
+    /*
     is(0.U) {
       mod.io.mode        := 2.U
       mod.io.writeAddr   := 0.U
@@ -265,6 +373,7 @@ class TestBlockMemory(val dataWidth: Int, val depth: Int) extends Module {
     is(6.U) {
       printf("result:%d\n", r_res)
     }
+    */
   }
 
     io.M_AXI_AWID               := mod.io.M_AXI_AWID
@@ -314,3 +423,4 @@ class TestBlockMemory(val dataWidth: Int, val depth: Int) extends Module {
     mod.io.M_AXI_RVALID := io.M_AXI_RVALID
     io.M_AXI_RREADY            := mod.io.M_AXI_RREADY
 }
+*/
