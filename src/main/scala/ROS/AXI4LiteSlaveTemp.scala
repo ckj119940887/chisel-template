@@ -4,24 +4,12 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental._
 
-class top extends BlackBox with HasBlackBoxResource {
-  val io = IO(new Bundle {
-    val clk_100MHz = Input(Clock())
-    val TMP_SDA    = Analog(1.W)          
-    val TMP_SCL    = Output(Bool())
-    val LED        = Output(UInt(8.W))
-  })
-
-  addResource("/verilog/top.v")
-}
-
 class AXI4LiteSlaveTemp(val C_S_AXI_ADDR_WIDTH: Int, 
                         val C_S_AXI_DATA_WIDTH: Int) extends Module {
 
   val io = IO(new Bundle{
     // I2C
-    val TMP_SDA    = Analog(1.W)          
-    val TMP_SCL    = Output(Bool())
+    val TMP_DATA = Input(UInt(8.W))
 
     // write address channel
     val S_AXI_AWADDR  = Input(UInt(C_S_AXI_ADDR_WIDTH.W))
@@ -53,12 +41,8 @@ class AXI4LiteSlaveTemp(val C_S_AXI_ADDR_WIDTH: Int,
     val S_AXI_RREADY = Input(Bool())
   })
 
-  val topMod = Module(new top)
-  topMod.io.clk_100MHz := clock
-  attach(io.TMP_SDA, topMod.io.TMP_SDA)
-  io.TMP_SCL := topMod.io.TMP_SCL
-
-  val r_temp = RegNext(topMod.io.LED, init = 0.U)
+  val r_temp = RegNext(RegNext(io.TMP_DATA, init = 0.U))
+  //val r_control = Reg(Vec(18, UInt(C_S_AXI_DATA_WIDTH.W)))
 
   val ADDR_LSB: Int = (C_S_AXI_DATA_WIDTH / 32) + 1
 
@@ -98,6 +82,7 @@ class AXI4LiteSlaveTemp(val C_S_AXI_ADDR_WIDTH: Int,
   }
 
   when(r_aw_valid & r_w_valid) {
+    //r_control(r_s_axi_awaddr) := r_s_axi_wdata
     r_s_axi_bvalid            := true.B
     r_aw_valid                := false.B
     r_w_valid                 := false.B
@@ -120,7 +105,7 @@ class AXI4LiteSlaveTemp(val C_S_AXI_ADDR_WIDTH: Int,
 
   when(r_ar_valid) {
     r_s_axi_rvalid            := true.B
-    r_s_axi_rdata             := r_temp
+    r_s_axi_rdata             := r_temp //r_control(r_s_axi_araddr)
     r_ar_valid                := false.B
   }
 
