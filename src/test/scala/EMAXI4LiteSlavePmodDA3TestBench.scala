@@ -31,7 +31,7 @@ class EMAXI4LiteSlavePmodDA3TestBench extends AnyFlatSpec with ChiselScalatestTe
 
       // write data 
       dut.io.S_AXI_AWVALID.poke(true.B)
-      dut.io.S_AXI_AWADDR.poke(8.U)
+      dut.io.S_AXI_AWADDR.poke(4.U)
       dut.io.S_AXI_WVALID.poke(true.B)
       dut.io.S_AXI_WDATA.poke("hffff".U)
       dut.io.S_AXI_WSTRB.poke("hf".U)
@@ -44,22 +44,6 @@ class EMAXI4LiteSlavePmodDA3TestBench extends AnyFlatSpec with ChiselScalatestTe
 
       dut.io.S_AXI_BREADY.poke(false.B)
       dut.clock.step()
-
-      // write enable
-      dut.io.S_AXI_AWVALID.poke(true.B)
-      dut.io.S_AXI_AWADDR.poke(4.U)
-      dut.io.S_AXI_WVALID.poke(true.B)
-      dut.io.S_AXI_WDATA.poke("h0000".U)
-      dut.io.S_AXI_WSTRB.poke("hf".U)
-      dut.clock.step()
-
-      dut.io.S_AXI_AWVALID.poke(false.B)
-      dut.io.S_AXI_WVALID.poke(false.B)
-      dut.io.S_AXI_BREADY.poke(true.B)
-      dut.clock.step(2)
-
-      dut.io.S_AXI_BREADY.poke(false.B)
-      dut.clock.step(100)
 
       // read logic
       dut.io.S_AXI_ARVALID.poke(true.B)

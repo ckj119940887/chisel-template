@@ -61,24 +61,8 @@ class AXI4LiteSlavePmodDA3(val C_S_AXI_ADDR_WIDTH: Int,
   })
 
   // r_control(0) -- modPmodDA3.io.ready
-  // r_control(1) -- modPmodDA3.io.enable
-  // r_control(2) -- modPmodDA3.io.data
-  val r_control = RegInit(VecInit(Seq.fill(3)(0.U(C_S_AXI_DATA_WIDTH.W))))
-
-  val r_enable = RegNext(r_control(1)(0))
-  val r_enable_next = RegNext(r_enable)
-  
-  val modPmodDA3 = Module(new PmodDA3(divide = 4))
-  modPmodDA3.io.clk    := clock
-  modPmodDA3.io.reset  := reset
-  modPmodDA3.io.enable := r_enable & (~r_enable_next)
-  modPmodDA3.io.data   := r_control(2)(15, 0)
-  io.CS                := modPmodDA3.io.CS
-  io.DIN               := modPmodDA3.io.DIN
-  io.SCLK              := modPmodDA3.io.SCLK
-  io.LDAC              := modPmodDA3.io.LDAC
-
-  r_control(0) := modPmodDA3.io.ready.asUInt
+  // r_control(1) -- modPmodDA3.io.data
+  val r_control = RegInit(VecInit(Seq.fill(2)(0.U(C_S_AXI_DATA_WIDTH.W))))
 
   val ADDR_LSB: Int = (C_S_AXI_DATA_WIDTH / 32) + 1
 
@@ -167,4 +151,17 @@ class AXI4LiteSlavePmodDA3(val C_S_AXI_ADDR_WIDTH: Int,
   io.S_AXI_RDATA   := r_s_axi_rdata
   io.S_AXI_RRESP   := 0.U
   io.S_AXI_RVALID  := r_s_axi_rvalid
+
+  
+  val modPmodDA3 = Module(new PmodDA3(divide = 4))
+  modPmodDA3.io.clk    := clock
+  modPmodDA3.io.reset  := reset
+  modPmodDA3.io.enable := r_s_axi_bvalid & io.S_AXI_BREADY
+  modPmodDA3.io.data   := r_control(1)(15, 0)
+  io.CS                := modPmodDA3.io.CS
+  io.DIN               := modPmodDA3.io.DIN
+  io.SCLK              := modPmodDA3.io.SCLK
+  io.LDAC              := modPmodDA3.io.LDAC
+
+  r_control(0) := modPmodDA3.io.ready.asUInt
 }
