@@ -19,7 +19,12 @@ object TestMemoryArbiterVerilogGeneration extends App {
 object TestTempSaveRestoreVerilogGeneration extends App {  
   (new ChiselStage).execute(
     Array("--target-dir", "generated_verilog"),
-    Seq(ChiselGeneratorAnnotation(() => new TempSaveRestore(nU1 = 1, nU8 = 1, nU16 = 0, nU32 = 3, nU64 = 4, nS1 = 0, nS8 = 1, nS16 = 0, nS32 = 0, nS64 = 0)))
+    Seq(ChiselGeneratorAnnotation(() => new TempSaveRestore(
+      nU1 = 1, nU8 = 2, nU16 = 3, nU32 = 0, nU64 = 1,
+      nS1 = 1, nS8 = 2, nS16 = 3, nS32 = 0, nS64 = 1,
+      addrWidth = 32, dataWidth = 64, depth = 100,
+      stackMaxDepth = 32, idWidth = 5, cpWidth = 8
+    )))
   )
 }
 
