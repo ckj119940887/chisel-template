@@ -132,3 +132,25 @@ class TempSaveRestoreTestBench extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 }
+
+class TempTestTestBench extends AnyFlatSpec with ChiselScalatestTester {
+  "TempTestTestBench" should "work" in {
+    test(new TempTest()).withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) { dut =>
+      dut.clock.setTimeout(3000)
+
+      dut.reset.poke(true.B)
+      for (i <- 0 until (5)) {
+        dut.clock.step()
+      }
+      dut.reset.poke(false.B)
+      dut.clock.step()
+
+      dut.io.in1.poke(1.U)
+      dut.io.in2.poke(2.U)
+
+      for(i <- 0 until 1000) {
+        dut.clock.step()
+      }
+    }
+  }
+}
