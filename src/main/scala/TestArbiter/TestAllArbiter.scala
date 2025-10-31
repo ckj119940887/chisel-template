@@ -9,9 +9,13 @@ class TestAllArbiter extends Module{
 
     })
 
-    val modWrapper   = Module(new AdderSigned64Wrapper(dataWidth = 64))
-    val arbMod       = Module(new AdderSigned64ArbiterModule(numIPs = 1, dataWidth = 64))
-    val testFunction = Module(new AdderSigned64FunctionModule(dataWidth = 64))
+    val modWrapper   = Module(new GlobalVarWrapper(numIPs = 1, nU1 = 3, nU8 = 0, nU16 = 1, nU32 = 3, nU64 = 4, nS8 = 8, nS16 = 0, nS32 = 0, nS64 = 0, dataWidth = 64))
+    val arbMod       = Module(new GlobalVarArbiterModule(numIPs = 1, nU1 = 3, nU8 = 0, nU16 = 1, nU32 = 3, nU64 = 4, nS8 = 8, nS16 = 0, nS32 = 0, nS64 = 0, dataWidth = 64))
+    val testFunction = Module(new GlobalVarFunctionModule(nU1 = 3, nU8 = 0, nU16 = 1, nU32 = 3, nU64 = 4, nS8 = 8, nS16 = 0, nS32 = 0, nS64 = 0, dataWidth = 64))
+
+    // val modWrapper   = Module(new AdderSigned64Wrapper(dataWidth = 64))
+    // val arbMod       = Module(new AdderSigned64ArbiterModule(numIPs = 1, dataWidth = 64))
+    // val testFunction = Module(new AdderSigned64FunctionModule(dataWidth = 64))
 
     // val modWrapper   = Module(new AdderUnsigned64Wrapper(dataWidth = 64))
     // val arbMod       = Module(new AdderUnsigned64ArbiterModule(numIPs = 1, dataWidth = 64))
