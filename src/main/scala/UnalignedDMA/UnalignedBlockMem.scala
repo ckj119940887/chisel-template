@@ -222,7 +222,7 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
                                   ))
   r_write_reversing := ~r_write_masking
 
-  r_write_data      := Cat(0.U(C_M_AXI_DATA_WIDTH.W), io.writeData)
+  r_write_data      := Cat(0.U(C_M_AXI_DATA_WIDTH.W), io.writeData & r_write_padding)
   r_write_data_shift:= MuxLookup(r_write_offset, 0.U,
                                   Seq(
                                       0.U -> r_write_data,
@@ -297,75 +297,62 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
 
   // dma logic
   val r_dma_req_next     = RegNext(r_dma_req)
+  val r_dma_req_read     = RegInit(false.B)
+  val r_dma_req_write    = RegInit(false.B)
   val r_dmaSrc_addr      = RegInit(0.U(C_M_AXI_ADDR_WIDTH.W))
   val r_dmaSrc_len       = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
   val r_dmaDst_addr      = RegInit(0.U(C_M_AXI_ADDR_WIDTH.W))
   val r_dmaDst_len       = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
   val r_dma_read_data    = RegInit(0.U(C_M_AXI_DATA_WIDTH.W))
-  val r_dma_status       = RegInit(0.U(2.W)) // 0.U - Idle, 1.U - read, 2.U - write
-  val r_dmaSrc_finish    = RegNext(r_dmaSrc_len === 0.U, init = false.B)
-  val r_dmaDst_finish    = RegNext(r_dmaDst_len === 0.U, init = false.B)
+  val r_dmaSrc_finish    = RegInit(false.B)
+  val r_dmaDst_finish    = RegInit(false.B)
   val r_dmaErase_enable  = RegInit(false.B)
-  val r_dmaRead_running  = RegInit(false.B)
-  val r_dmaWrite_running = RegInit(false.B)
 
-  io.dmaValid := RegNext(r_dma_req & (r_dma_status === 3.U), init = false.B)
+  // data from read port
+  r_dma_read_data    := r_final_buffer
+  io.dmaValid := RegNext(r_dmaDst_finish & r_b_valid, init = false.B)
 
+  // initialize all registers
   when(r_dma_req & ~r_dma_req_next) {
     r_dmaSrc_addr      := io.dmaSrcAddr
     r_dmaDst_addr      := io.dmaDstAddr + io.dmaDstOffset
     r_dmaSrc_len       := io.dmaSrcLen
     r_dmaDst_len       := io.dmaDstLen
-    // r_dmaSrc_finish    := false.B
-    // r_dmaDst_finish    := false.B
-
-    r_dmaRead_running  := false.B
-    r_dmaWrite_running := false.B
 
     r_dmaErase_enable  := io.dmaSrcLen === 0.U
 
-    r_dma_status       := Mux(io.dmaSrcLen === 0.U, 2.U, 1.U)
-  } .elsewhen(r_dma_req & r_r_valid) {
-    r_dma_status       := 2.U
-    r_dmaSrc_len       := Mux(r_dmaSrc_len =/= 0.U, r_dmaSrc_len - 8.U, r_dmaSrc_len)
-  } .elsewhen(r_dma_req & r_b_valid) {
-    r_dma_status       := Mux(!r_dmaSrc_finish, 1.U, Mux(r_dmaDst_finish, 3.U, 2.U))
+    r_dma_req_read     := true.B
+  } 
+  
+  // read transaction
+  when(r_dmaSrc_finish & r_r_valid) {
+    r_dma_req_read     := false.B
 
-    r_dmaRead_running  := false.B
-    r_dmaWrite_running := false.B
-
+    r_dma_req_write    := true.B
+  } .elsewhen(r_dma_req_read & r_r_valid) {
+    r_dma_req_read     := false.B
+    r_dmaSrc_len       := Mux(r_dmaSrc_len > 8.U, r_dmaSrc_len - 8.U, r_dmaSrc_len)
     r_dmaSrc_addr      := r_dmaSrc_addr + 8.U
-    r_dmaDst_addr      := r_dmaDst_addr + 8.U
-  }
+    r_dmaSrc_finish    := Mux(r_dmaSrc_len > 8.U, false.B, true.B)
 
-  when(r_dma_req & io.M_AXI_AWVALID & io.M_AXI_AWREADY) {
-    r_dmaDst_len       := Mux(r_dmaDst_len =/= 0.U, r_dmaDst_len - 8.U, r_dmaDst_len)
-  }
+    r_dma_req_write    := true.B
+  } 
+  
+  // write transaction
+  when(r_dmaDst_finish & r_b_valid) {
+    r_dma_req_write    := false.B
 
-  when(r_dma_status === 3.U) {
-    r_dma_status       := 0.U
     r_dmaErase_enable  := false.B
-  }
 
-  when(r_dma_status === 1.U & ~r_dmaRead_running) {
-    r_dmaRead_running  := true.B
+    r_dmaSrc_finish    := false.B
+    r_dmaDst_finish    := false.B
+  } .elsewhen(r_dma_req_write & r_b_valid) {
+    r_dma_req_write    := false.B
+    r_dmaDst_len       := Mux(r_dmaDst_len > 8.U, r_dmaDst_len - 8.U, r_dmaDst_len)
+    r_dmaDst_addr      := r_dmaDst_addr + 8.U
+    r_dmaDst_finish    := Mux(r_dmaDst_len > 8.U, false.B, true.B)
 
-    r_m_axi_arvalid    := true.B
-    r_m_axi_araddr     := r_dmaSrc_addr + C_M_TARGET_SLAVE_BASE_ADDR.U
-  }
-
-  when(io.M_AXI_RVALID & io.M_AXI_RREADY & io.M_AXI_RLAST) {
-    r_dma_read_data    := io.M_AXI_RDATA
-  }
-
-  when(r_dma_status === 2.U & ~r_dmaWrite_running) {
-    r_dmaWrite_running := true.B
-
-    r_m_axi_awvalid    := true.B
-    r_m_axi_awaddr     := r_dmaDst_addr + C_M_TARGET_SLAVE_BASE_ADDR.U
-    r_m_axi_wvalid     := true.B
-    r_m_axi_wdata      := Mux((r_dmaSrc_finish & !r_dmaDst_finish) | r_dmaErase_enable, 0.U, r_dma_read_data)
-    r_m_axi_wstrb      := "hFF".U
+    r_dma_req_read     := true.B
   }
 
   // AXI4 Full port connection
