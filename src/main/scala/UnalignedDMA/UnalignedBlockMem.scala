@@ -112,8 +112,20 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   val r_m_axi_rready  = RegInit(false.B)
   val r_r_valid       = RegInit(false.B)
 
-  val r_read_req      = RegNext(io.mode === 1.U, init = false.B)
-  val r_write_req     = RegNext(io.mode === 2.U, init = false.B)
+  // dma field register
+  val r_dma_req_read     = RegInit(false.B)
+  val r_dma_req_write    = RegInit(false.B)
+  val r_dmaSrc_addr      = RegInit(0.U(C_M_AXI_ADDR_WIDTH.W))
+  val r_dmaSrc_len       = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
+  val r_dmaDst_addr      = RegInit(0.U(C_M_AXI_ADDR_WIDTH.W))
+  val r_dmaDst_len       = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
+  val r_dma_read_data    = RegInit(0.U(C_M_AXI_DATA_WIDTH.W))
+  // the write length used in unaligned write
+  val r_dma_dst_len      = RegInit(0.U(log2Up(C_M_AXI_DATA_WIDTH / 8 + 1).W))
+
+  // read, write, dma request
+  val r_read_req      = RegNext((io.mode === 1.U) || r_dma_req_read, init = false.B)
+  val r_write_req     = RegNext((io.mode === 2.U) || r_dma_req_write, init = false.B)
   val r_dma_req       = RegNext(io.mode === 3.U, init = false.B)
 
   // read logic
@@ -127,7 +139,7 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   val r_buffer_shift6 = RegInit(0.U(C_M_AXI_DATA_WIDTH.W))
   val r_buffer_shift7 = RegInit(0.U(C_M_AXI_DATA_WIDTH.W))
   val r_final_buffer  = RegInit(0.U(C_M_AXI_DATA_WIDTH.W))
-  val r_read_addr     = RegNext(io.readAddr + io.readOffset, init = 0.U)
+  val r_read_addr     = RegNext(Mux(r_dma_req_read, r_dmaSrc_addr, io.readAddr + io.readOffset), init = 0.U)
   val r_read_offset   = RegNext(r_read_addr(2,0), init = 0.U)
   val r_read_req_next = RegNext(r_read_req, init = false.B)
 
@@ -154,7 +166,7 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   io.readValid        := RegNext(RegNext(r_read_req & r_r_valid))
   io.readData         := r_final_buffer
 
-  r_m_axi_arlen     := Mux(r_dma_req, 0.U, 1.U)
+  r_m_axi_arlen     := 1.U
 
   when(r_read_req & ~r_read_req_next) {
     r_m_axi_arvalid := true.B
@@ -187,7 +199,8 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   val r_write_data_shift  = RegInit(0.U((2 * C_M_AXI_DATA_WIDTH).W))
   val r_write_data_1      = RegInit(0.U((2 * C_M_AXI_DATA_WIDTH).W))
   val r_write_data_2      = RegInit(0.U((2 * C_M_AXI_DATA_WIDTH).W))
-  val r_write_addr        = RegNext(io.writeAddr + io.writeOffset, init = 0.U)
+  val r_write_addr        = RegNext(Mux(r_dma_req_write, r_dmaDst_addr, io.writeAddr + io.writeOffset), init = 0.U)
+  val r_write_len         = RegInit(0.U(log2Up(C_M_AXI_DATA_WIDTH / 8 + 1).W))
   val r_write_req_next    = RegNext(r_write_req, init = false.B)
   val r_write_running     = RegInit(false.B)
   val r_write_offset      = RegInit(0.U(3.W))
@@ -195,10 +208,11 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   val r_first_write_valid = RegInit(false.B)
   val w_m_axi_wlast       = io.M_AXI_WVALID & io.M_AXI_WREADY
 
-  r_m_axi_awlen     := Mux(r_dma_req, 0.U, 1.U)
+  r_m_axi_awlen     := 1.U
 
+  r_write_len       := Mux(r_dma_req_write, r_dma_dst_len, io.writeLen)
   r_write_offset    := r_write_addr(2, 0)
-  r_write_padding   := MuxLookup(io.writeLen, 1.U,
+  r_write_padding   := MuxLookup(r_write_len, 1.U,
                                   Seq(
                                       1.U -> "hFF".U,
                                       2.U -> "hFFFF".U,
@@ -222,7 +236,7 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
                                   ))
   r_write_reversing := ~r_write_masking
 
-  r_write_data      := Cat(0.U(C_M_AXI_DATA_WIDTH.W), io.writeData & r_write_padding)
+  r_write_data      := Mux(r_dma_req_write, Cat(0.U(C_M_AXI_DATA_WIDTH.W), r_dma_read_data & r_write_padding), Cat(0.U(C_M_AXI_DATA_WIDTH.W), io.writeData & r_write_padding))
   r_write_data_shift:= MuxLookup(r_write_offset, 0.U,
                                   Seq(
                                       0.U -> r_write_data,
@@ -297,19 +311,11 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
 
   // dma logic
   val r_dma_req_next     = RegNext(r_dma_req)
-  val r_dma_req_read     = RegInit(false.B)
-  val r_dma_req_write    = RegInit(false.B)
-  val r_dmaSrc_addr      = RegInit(0.U(C_M_AXI_ADDR_WIDTH.W))
-  val r_dmaSrc_len       = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
-  val r_dmaDst_addr      = RegInit(0.U(C_M_AXI_ADDR_WIDTH.W))
-  val r_dmaDst_len       = RegInit(0.U(log2Up(MEMORY_DEPTH).W))
-  val r_dma_read_data    = RegInit(0.U(C_M_AXI_DATA_WIDTH.W))
   val r_dmaSrc_finish    = RegInit(false.B)
   val r_dmaDst_finish    = RegInit(false.B)
   val r_dmaErase_enable  = RegInit(false.B)
 
   // data from read port
-  r_dma_read_data    := r_final_buffer
   io.dmaValid := RegNext(r_dmaDst_finish & r_b_valid, init = false.B)
 
   // initialize all registers
@@ -322,21 +328,43 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
     r_dmaErase_enable  := io.dmaSrcLen === 0.U
 
     r_dma_req_read     := true.B
+    r_dmaSrc_finish    := io.dmaSrcLen <= 8.U
+    r_dmaDst_finish    := io.dmaDstLen <= 8.U
+    r_dma_dst_len      := Mux(io.dmaDstLen > 8.U, 8.U, io.dmaDstLen)
   } 
+
+  val unalignRead_finish = RegNext(RegNext(r_r_valid))
   
   // read transaction
-  when(r_dmaSrc_finish & r_r_valid) {
+  when((r_dmaSrc_finish & unalignRead_finish) || r_dmaErase_enable) {
     r_dma_req_read     := false.B
 
+    r_dmaSrc_len       := 0.U
     r_dma_req_write    := true.B
-  } .elsewhen(r_dma_req_read & r_r_valid) {
+  } .elsewhen(r_dma_req_read & unalignRead_finish) {
     r_dma_req_read     := false.B
     r_dmaSrc_len       := Mux(r_dmaSrc_len > 8.U, r_dmaSrc_len - 8.U, r_dmaSrc_len)
     r_dmaSrc_addr      := r_dmaSrc_addr + 8.U
-    r_dmaSrc_finish    := Mux(r_dmaSrc_len > 8.U, false.B, true.B)
+    r_dmaSrc_finish    := r_dmaSrc_len <= 8.U
 
     r_dma_req_write    := true.B
+    r_dma_dst_len      := Mux(r_dmaDst_len > 8.U, 8.U, r_dmaDst_len)
   } 
+
+  // save read data
+  when((r_dma_req & unalignRead_finish) || r_dmaErase_enable) {
+    r_dma_read_data  := MuxLookup(r_dmaSrc_len, r_final_buffer,
+                                    Seq(
+                                        0.U -> 0.U,
+                                        1.U -> r_final_buffer(7,0),
+                                        2.U -> r_final_buffer(15,0),
+                                        3.U -> r_final_buffer(23,0),
+                                        4.U -> r_final_buffer(31,0),
+                                        5.U -> r_final_buffer(39,0),
+                                        6.U -> r_final_buffer(47,0),
+                                        7.U -> r_final_buffer(55,0)
+                                    ))
+  }
   
   // write transaction
   when(r_dmaDst_finish & r_b_valid) {
@@ -350,7 +378,7 @@ class UnalignedBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
     r_dma_req_write    := false.B
     r_dmaDst_len       := Mux(r_dmaDst_len > 8.U, r_dmaDst_len - 8.U, r_dmaDst_len)
     r_dmaDst_addr      := r_dmaDst_addr + 8.U
-    r_dmaDst_finish    := Mux(r_dmaDst_len > 8.U, false.B, true.B)
+    r_dmaDst_finish    := r_dmaDst_len <= 8.U
 
     r_dma_req_read     := true.B
   }
