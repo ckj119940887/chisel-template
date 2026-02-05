@@ -4,6 +4,14 @@ import chisel3._
 import chiseltest._
 import chiseltest.simulator.WriteVcdAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
+import chisel3.stage.{ChiselStage,ChiselGeneratorAnnotation}
+
+object TestPureBlockMemory extends App {  
+  (new ChiselStage).execute(
+    Array("--target-dir", "generated_verilog"),
+    Seq(ChiselGeneratorAnnotation(() => new TopPureBlockMemory(C_M_AXI_ADDR_WIDTH = 32, C_M_AXI_DATA_WIDTH = 64, MEMORY_DEPTH = 1000, C_M_TARGET_SLAVE_BASE_ADDR = 0)))
+  )
+}
 
 class AXI4SlaveTest extends AnyFlatSpec with ChiselScalatestTester {
   val params = AXI4Params(addrWidth = 32, dataWidth = 64)
@@ -61,6 +69,7 @@ class AXI4SlaveTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 }
 
+/*
 class PureBlockMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
   "PureBlockMemoryTest" should "correctly perform sequential handshakes" in {
     test(new TopPureBlockMemory()).withAnnotations(Seq(WriteVcdAnnotation, TreadleBackendAnnotation)) { dut =>
@@ -76,3 +85,4 @@ class PureBlockMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 }
+*/
