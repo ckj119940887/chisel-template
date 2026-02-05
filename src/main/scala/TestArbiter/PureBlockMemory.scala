@@ -421,148 +421,211 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   io.M_AXI_RREADY  := true.B
 }
 
-class BlockMemoryWrapper(val depth: Int = 1024, val addrWidth: Int = 64, val dataWidth: Int = 64) extends Module {
-    val io = IO(new Bundle{
-        val req = Input(Valid(new BlockMemoryRequestBundle(addrWidth, dataWidth, depth)))
-        val resp = Output(Valid(new BlockMemoryResponseBundle(dataWidth)))
+class TopPureBlockMemory extends Module {
+  val io = IO(new Bundle {
+    val start = Input(Bool())
+  })
 
-        // master write address channel
-        val M_AXI_AWID    = Output(UInt(1.W))
-        val M_AXI_AWADDR  = Output(UInt(addrWidth.W))
-        val M_AXI_AWLEN   = Output(UInt(8.W))
-        val M_AXI_AWSIZE  = Output(UInt(3.W))
-        val M_AXI_AWBURST = Output(UInt(2.W))
-        val M_AXI_AWLOCK  = Output(Bool())
-        val M_AXI_AWCACHE = Output(UInt(4.W))
-        val M_AXI_AWPROT  = Output(UInt(3.W))
-        val M_AXI_AWQOS   = Output(UInt(4.W))
-        val M_AXI_AWUSER  = Output(UInt(1.W))
-        val M_AXI_AWVALID = Output(Bool())
-        val M_AXI_AWREADY = Input(Bool())
+  val params = AXI4Params(addrWidth = 32, dataWidth = 64)
 
-        // master write data channel
-        val M_AXI_WDATA  = Output(UInt(dataWidth.W))
-        val M_AXI_WSTRB  = Output(UInt((dataWidth/8).W))
-        val M_AXI_WLAST  = Output(Bool())
-        val M_AXI_WUSER  = Output(UInt(1.W))
-        val M_AXI_WVALID = Output(Bool())
-        val M_AXI_WREADY = Input(Bool())
+  val r_state = RegInit(0.U(5.W))
+  val r_start = RegNext(io.start)
 
-        // master write response channel
-        val M_AXI_BID    = Input(UInt(1.W))
-        val M_AXI_BRESP  = Input(UInt(2.W))
-        val M_AXI_BUSER  = Input(UInt(1.W))
-        val M_AXI_BVALID = Input(Bool())
-        val M_AXI_BREADY = Output(Bool())
+  val pBlockMemory = Module(new PureBlockMemory(C_M_AXI_DATA_WIDTH = 64,
+                                               C_M_AXI_ADDR_WIDTH = 32,
+                                               MEMORY_DEPTH = 1000,
+                                               C_M_TARGET_SLAVE_BASE_ADDR = 0x0))
+  val mem = Module(new AXI4MemSlave(params))
 
-        // master read address channel
-        val M_AXI_ARID    = Output(UInt(1.W))
-        val M_AXI_ARADDR  = Output(UInt(addrWidth.W))
-        val M_AXI_ARLEN   = Output(UInt(8.W))
-        val M_AXI_ARSIZE  = Output(UInt(3.W))
-        val M_AXI_ARBURST = Output(UInt(2.W))
-        val M_AXI_ARLOCK  = Output(Bool())
-        val M_AXI_ARCACHE = Output(UInt(4.W))
-        val M_AXI_ARPROT  = Output(UInt(3.W))
-        val M_AXI_ARQOS   = Output(UInt(4.W))
-        val M_AXI_ARUSER  = Output(UInt(1.W))
-        val M_AXI_ARVALID = Output(Bool())
-        val M_AXI_ARREADY = Input(Bool())
+  pBlockMemory.io.mode         := 0.U
+  pBlockMemory.io.readAddr     := 0.U
+  pBlockMemory.io.readOffset   := 0.U
+  pBlockMemory.io.readLen      := 0.U
 
-        // master read data channel
-        val M_AXI_RID    = Input(UInt(1.W))
-        val M_AXI_RDATA  = Input(UInt(dataWidth.W))
-        val M_AXI_RRESP  = Input(UInt(2.W))
-        val M_AXI_RLAST  = Input(Bool())
-        val M_AXI_RUSER  = Input(UInt(1.W))
-        val M_AXI_RVALID = Input(Bool())
-        val M_AXI_RREADY = Output(Bool())
-    })
+  pBlockMemory.io.writeAddr    := 0.U
+  pBlockMemory.io.writeOffset  := 0.U
+  pBlockMemory.io.writeLen     := 0.U
+  pBlockMemory.io.writeData    := 0.U
 
-    val mem = Module(new BlockMemory(C_M_AXI_ADDR_WIDTH = addrWidth, C_M_AXI_DATA_WIDTH = dataWidth, C_M_TARGET_SLAVE_BASE_ADDR = 0x0, MEMORY_DEPTH = depth))
-    // mem.io.mode       := 0.U
-    // mem.io.readAddr   := 0.U
-    // mem.io.writeAddr  := 0.U
-    // mem.io.writeData  := 0.U
-    // mem.io.dmaSrcAddr := 0.U
-    // mem.io.dmaDstAddr := 0.U
-    // mem.io.dmaSrcLen  := 0.U
-    // mem.io.dmaDstLen  := 0.U
+  pBlockMemory.io.dmaSrcAddr   := 0.U
+  pBlockMemory.io.dmaDstAddr   := 0.U
+  pBlockMemory.io.dmaDstOffset := 0.U
+  pBlockMemory.io.dmaSrcLen    := 0.U
+  pBlockMemory.io.dmaDstLen    := 0.U
 
-    io.M_AXI_AWID        := mem.io.M_AXI_AWID   
-    io.M_AXI_AWADDR      := mem.io.M_AXI_AWADDR 
-    io.M_AXI_AWLEN       := mem.io.M_AXI_AWLEN  
-    io.M_AXI_AWSIZE      := mem.io.M_AXI_AWSIZE 
-    io.M_AXI_AWBURST     := mem.io.M_AXI_AWBURST
-    io.M_AXI_AWLOCK      := mem.io.M_AXI_AWLOCK 
-    io.M_AXI_AWCACHE     := mem.io.M_AXI_AWCACHE
-    io.M_AXI_AWPROT      := mem.io.M_AXI_AWPROT 
-    io.M_AXI_AWQOS       := mem.io.M_AXI_AWQOS  
-    io.M_AXI_AWUSER      := mem.io.M_AXI_AWUSER 
-    io.M_AXI_AWVALID     := mem.io.M_AXI_AWVALID
-    mem.io.M_AXI_AWREADY := io.M_AXI_AWREADY
 
-    io.M_AXI_WDATA       := mem.io.M_AXI_WDATA 
-    io.M_AXI_WSTRB       := mem.io.M_AXI_WSTRB 
-    io.M_AXI_WLAST       := mem.io.M_AXI_WLAST 
-    io.M_AXI_WUSER       := mem.io.M_AXI_WUSER 
-    io.M_AXI_WVALID      := mem.io.M_AXI_WVALID
-    mem.io.M_AXI_WREADY  := io.M_AXI_WREADY
-
-    mem.io.M_AXI_BID     := io.M_AXI_BID   
-    mem.io.M_AXI_BRESP   := io.M_AXI_BRESP 
-    mem.io.M_AXI_BUSER   := io.M_AXI_BUSER 
-    mem.io.M_AXI_BVALID  := io.M_AXI_BVALID
-    io.M_AXI_BREADY      := mem.io.M_AXI_BREADY
-
-    io.M_AXI_ARID        := mem.io.M_AXI_ARID   
-    io.M_AXI_ARADDR      := mem.io.M_AXI_ARADDR 
-    io.M_AXI_ARLEN       := mem.io.M_AXI_ARLEN  
-    io.M_AXI_ARSIZE      := mem.io.M_AXI_ARSIZE 
-    io.M_AXI_ARBURST     := mem.io.M_AXI_ARBURST
-    io.M_AXI_ARLOCK      := mem.io.M_AXI_ARLOCK 
-    io.M_AXI_ARCACHE     := mem.io.M_AXI_ARCACHE
-    io.M_AXI_ARPROT      := mem.io.M_AXI_ARPROT 
-    io.M_AXI_ARQOS       := mem.io.M_AXI_ARQOS  
-    io.M_AXI_ARUSER      := mem.io.M_AXI_ARUSER 
-    io.M_AXI_ARVALID     := mem.io.M_AXI_ARVALID
-    mem.io.M_AXI_ARREADY := io.M_AXI_ARREADY
-
-    mem.io.M_AXI_RID     := io.M_AXI_RID   
-    mem.io.M_AXI_RDATA   := io.M_AXI_RDATA 
-    mem.io.M_AXI_RRESP   := io.M_AXI_RRESP 
-    mem.io.M_AXI_RLAST   := io.M_AXI_RLAST 
-    mem.io.M_AXI_RUSER   := io.M_AXI_RUSER 
-    mem.io.M_AXI_RVALID  := io.M_AXI_RVALID
-    io.M_AXI_RREADY      := mem.io.M_AXI_RREADY
-
-    val r_req            = Reg(new BlockMemoryRequestBundle(addrWidth, dataWidth, depth))
-    val r_req_valid      = RegNext(io.req.valid, false.B)
-    val r_req_valid_next = RegNext(r_req_valid, false.B)
-
-    val r_resp_data  = RegNext(mem.io.readData)
-    val r_resp_valid = RegNext(mem.io.readValid | mem.io.writeValid | mem.io.dmaValid)
-
-    val r_busy       = RegInit(0.U(2.W))
-    when(r_req_valid & ~r_req_valid_next) {
-        r_busy := 3.U
-    } .elsewhen(mem.io.readValid | mem.io.writeValid | mem.io.dmaValid) {
-        r_busy := 0.U
+  switch(r_state) {
+    is(0.U) {
+      r_state := Mux(io.start, 1.U, 0.U)
     }
+    is(1.U) {
+      pBlockMemory.io.writeAddr := 0.U
+      pBlockMemory.io.writeData := "h0807060504030201".U
+      pBlockMemory.io.writeLen := 8.U
+      pBlockMemory.io.writeOffset := 0.U
+      pBlockMemory.io.mode := 2.U
+      when(pBlockMemory.io.writeValid) {
+        r_state := 2.U
+        pBlockMemory.io.mode := 0.U
+      }
+    }
+    is(2.U) {
+      pBlockMemory.io.writeAddr := 8.U
+      pBlockMemory.io.writeData := "h1817161514131211".U
+      pBlockMemory.io.writeLen := 8.U
+      pBlockMemory.io.writeOffset := 0.U
+      pBlockMemory.io.mode := 2.U
+      when(pBlockMemory.io.writeValid) {
+        r_state := 3.U
+        pBlockMemory.io.mode := 0.U
+      }
+    }
+    is(3.U) {
+      pBlockMemory.io.writeAddr := 16.U
+      pBlockMemory.io.writeData := "h2827262524232221".U
+      pBlockMemory.io.writeLen := 8.U
+      pBlockMemory.io.writeOffset := 0.U
+      pBlockMemory.io.mode := 2.U
+      when(pBlockMemory.io.writeValid) {
+        r_state := 4.U
+        pBlockMemory.io.mode := 0.U
+      }
+    }
+    is(4.U) {
+      pBlockMemory.io.writeAddr := 24.U
+      pBlockMemory.io.writeData := "h3837363534333231".U
+      pBlockMemory.io.writeLen := 8.U
+      pBlockMemory.io.writeOffset := 0.U
+      pBlockMemory.io.mode := 2.U
+      when(pBlockMemory.io.writeValid) {
+        r_state := 5.U
+        pBlockMemory.io.mode := 0.U
+      }
+    }
+    is(5.U) {
+      pBlockMemory.io.writeAddr := 32.U
+      pBlockMemory.io.writeData := "h4847464544434241".U
+      pBlockMemory.io.writeLen := 8.U
+      pBlockMemory.io.writeOffset := 0.U
+      pBlockMemory.io.mode := 2.U
+      when(pBlockMemory.io.writeValid) {
+        r_state := 6.U
+        pBlockMemory.io.mode := 0.U
+      }
+    }
+    is(6.U) {
+      pBlockMemory.io.readAddr := 0.U
+      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readLen := 8.U
+      pBlockMemory.io.mode := 1.U
+      when(pBlockMemory.io.readValid) {
+        r_state := 7.U
+        printf("%x\n", pBlockMemory.io.readData)
+        pBlockMemory.io.mode := 0.U
+      }
+    }
+    is(7.U) {
+      pBlockMemory.io.readAddr := 8.U
+      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readLen := 8.U
+      pBlockMemory.io.mode := 1.U
+      when(pBlockMemory.io.readValid) {
+        r_state := 8.U
+        pBlockMemory.io.mode := 0.U
+        printf("%x\n", pBlockMemory.io.readData)
+      }
+    }
+    is(8.U) {
+      pBlockMemory.io.readAddr := 16.U
+      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readLen := 8.U
+      pBlockMemory.io.mode := 1.U
+      when(pBlockMemory.io.readValid) {
+        r_state := 9.U
+        printf("%x\n", pBlockMemory.io.readData)
+        pBlockMemory.io.mode := 0.U
+      }
+    }
+    is(9.U) {
+      pBlockMemory.io.readAddr := 24.U
+      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readLen := 8.U
+      pBlockMemory.io.mode := 1.U
+      when(pBlockMemory.io.readValid) {
+        r_state := 10.U
+        pBlockMemory.io.mode := 0.U
+        printf("%x\n", pBlockMemory.io.readData)
+      }
+    }
+    is(10.U) {
+      pBlockMemory.io.readAddr := 32.U
+      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readLen := 8.U
+      pBlockMemory.io.mode := 1.U
+      when(pBlockMemory.io.readValid) {
+        r_state := 11.U
+        pBlockMemory.io.mode := 0.U
+        printf("%x\n", pBlockMemory.io.readData)
+      }
+    }
+    is(11.U) {
+      pBlockMemory.io.dmaSrcAddr := 0.U  
+      pBlockMemory.io.dmaDstAddr := 48.U  
+      pBlockMemory.io.dmaDstOffset := 0.U
+      pBlockMemory.io.dmaSrcLen := 32.U   
+      pBlockMemory.io.dmaDstLen := 32.U   
+      pBlockMemory.io.mode := 3.U
+      when(pBlockMemory.io.dmaValid) {
+        pBlockMemory.io.mode := 0.U
+      }     
+    }
+  }
 
-    r_req := io.req.bits
+  mem.io.AWID                       := pBlockMemory.io.M_AXI_AWID   
+  mem.io.AWADDR                     := pBlockMemory.io.M_AXI_AWADDR 
+  mem.io.AWLEN                      := pBlockMemory.io.M_AXI_AWLEN  
+  mem.io.AWSIZE                     := pBlockMemory.io.M_AXI_AWSIZE 
+  mem.io.AWBURST                    := pBlockMemory.io.M_AXI_AWBURST
+  mem.io.AWLOCK                     := pBlockMemory.io.M_AXI_AWLOCK 
+  mem.io.AWCACHE                    := pBlockMemory.io.M_AXI_AWCACHE
+  mem.io.AWPROT                     := pBlockMemory.io.M_AXI_AWPROT 
+  mem.io.AWQOS                      := pBlockMemory.io.M_AXI_AWQOS  
+  mem.io.AWUSER                     := pBlockMemory.io.M_AXI_AWUSER 
+  mem.io.AWVALID                    := pBlockMemory.io.M_AXI_AWVALID
+  pBlockMemory.io.M_AXI_AWREADY     := mem.io.AWREADY
 
-    io.resp.valid := r_resp_valid
-    io.resp.bits.data := r_resp_data
+  mem.io.WDATA                      := pBlockMemory.io.M_AXI_WDATA 
+  mem.io.WSTRB                      := pBlockMemory.io.M_AXI_WSTRB 
+  mem.io.WLAST                      := pBlockMemory.io.M_AXI_WLAST 
+  mem.io.WUSER                      := pBlockMemory.io.M_AXI_WUSER 
+  mem.io.WVALID                     := pBlockMemory.io.M_AXI_WVALID
+  pBlockMemory.io.M_AXI_WREADY      := mem.io.WREADY
 
-    //when(r_req_valid) {
-      mem.io.mode       := r_req.mode & r_busy     
-      mem.io.readAddr   := r_req.readAddr  
-      mem.io.writeAddr  := r_req.writeAddr 
-      mem.io.writeData  := r_req.writeData 
-      mem.io.dmaSrcAddr := r_req.dmaSrcAddr
-      mem.io.dmaDstAddr := r_req.dmaDstAddr
-      mem.io.dmaSrcLen  := r_req.dmaSrcLen 
-      mem.io.dmaDstLen  := r_req.dmaDstLen 
-    //}
+  pBlockMemory.io.M_AXI_BID         := mem.io.BID   
+  pBlockMemory.io.M_AXI_BRESP       := mem.io.BRESP 
+  pBlockMemory.io.M_AXI_BUSER       := mem.io.BUSER 
+  pBlockMemory.io.M_AXI_BVALID      := mem.io.BVALID
+  mem.io.BREADY                     := pBlockMemory.io.M_AXI_BREADY
+
+  mem.io.ARID                       := pBlockMemory.io.M_AXI_ARID   
+  mem.io.ARADDR                     := pBlockMemory.io.M_AXI_ARADDR 
+  mem.io.ARLEN                      := pBlockMemory.io.M_AXI_ARLEN  
+  mem.io.ARSIZE                     := pBlockMemory.io.M_AXI_ARSIZE 
+  mem.io.ARBURST                    := pBlockMemory.io.M_AXI_ARBURST
+  mem.io.ARLOCK                     := pBlockMemory.io.M_AXI_ARLOCK 
+  mem.io.ARCACHE                    := pBlockMemory.io.M_AXI_ARCACHE
+  mem.io.ARPROT                     := pBlockMemory.io.M_AXI_ARPROT 
+  mem.io.ARQOS                      := pBlockMemory.io.M_AXI_ARQOS  
+  mem.io.ARUSER                     := pBlockMemory.io.M_AXI_ARUSER 
+  mem.io.ARVALID                    := pBlockMemory.io.M_AXI_ARVALID
+  pBlockMemory.io.M_AXI_ARREADY     := mem.io.ARREADY
+
+  pBlockMemory.io.M_AXI_RID         := mem.io.RID   
+  pBlockMemory.io.M_AXI_RDATA       := mem.io.RDATA 
+  pBlockMemory.io.M_AXI_RRESP       := mem.io.RRESP 
+  pBlockMemory.io.M_AXI_RLAST       := mem.io.RLAST 
+  pBlockMemory.io.M_AXI_RUSER       := mem.io.RUSER 
+  pBlockMemory.io.M_AXI_RVALID      := mem.io.RVALID
+  mem.io.RREADY                     := pBlockMemory.io.M_AXI_RREADY
+
 }
