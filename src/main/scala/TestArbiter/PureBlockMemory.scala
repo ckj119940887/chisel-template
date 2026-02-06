@@ -312,6 +312,7 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   }
 
   // dma logic
+  val r_dma_src_lt_dst   = RegNext(io.dmaSrcLen < io.dmaDstLen)
   val r_dma_req_next     = RegNext(r_dma_req)
   val r_dmaSrc_finish    = RegInit(false.B)
   val r_dmaDst_finish    = RegInit(false.B)
@@ -335,7 +336,7 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
     r_dma_dst_len      := Mux(io.dmaDstLen > 8.U, 8.U, io.dmaDstLen)
   }
 
-  val unalignRead_finish = RegNext(RegNext(r_r_valid))
+  val unalignRead_finish = ~r_dmaErase_enable & RegNext(RegNext(r_r_valid))
 
   // read transaction
   when((r_dmaSrc_finish & unalignRead_finish) || r_dmaErase_enable) {
@@ -350,11 +351,15 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
     r_dmaSrc_finish    := r_dmaSrc_len <= 8.U
 
     r_dma_req_write    := true.B
+  }
+
+  when((r_dma_req_read & unalignRead_finish) || r_dmaErase_enable) {
     r_dma_dst_len      := Mux(r_dmaDst_len > 8.U, 8.U, r_dmaDst_len)
   }
 
   // save read data
-  when((r_dma_req & unalignRead_finish) || r_dmaErase_enable) {
+//   val r_dma_real_len = RegNext(Mux(r_dmaErase_enable, r_dmaDst_len, r_dmaSrc_len))
+  when(r_dma_req & unalignRead_finish) {
     r_dma_read_data  := MuxLookup(r_dmaSrc_len, r_final_buffer,
                                     Seq(
                                         0.U -> 0.U,
@@ -366,9 +371,15 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
                                         6.U -> r_final_buffer(47,0),
                                         7.U -> r_final_buffer(55,0)
                                     ))
+  } .elsewhen(r_dmaErase_enable & io.M_AXI_RVALID & io.M_AXI_RREADY) {
+    r_dma_read_data := Mux(r_dmaDst_len >= 8.U, 0.U, io.M_AXI_RDATA)
   }
 
   // write transaction
+  val r_write_finish_precond1 = RegInit(false.B)
+  val r_write_finish_precond2 = RegInit(false.B)
+  r_write_finish_precond1 := (~r_dmaErase_enable) & r_dma_src_lt_dst & r_dmaSrc_finish
+  r_write_finish_precond2 := r_dmaDst_len <= 8.U
   when(r_dmaDst_finish & RegNext(r_b_valid)) {
     r_dma_req_write    := false.B
 
@@ -380,7 +391,7 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
     r_dma_req_write    := false.B
     r_dmaDst_len       := Mux(r_dmaDst_len > 8.U, r_dmaDst_len - 8.U, r_dmaDst_len)
     r_dmaDst_addr      := r_dmaDst_addr + 8.U
-    r_dmaDst_finish    := r_dmaDst_len <= 8.U
+    r_dmaDst_finish    := r_write_finish_precond1 | r_write_finish_precond2
 
     r_dma_req_read     := ~r_dmaSrc_finish
   }
@@ -634,7 +645,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
       pBlockMemory.io.dmaSrcAddr := 0.U  
       pBlockMemory.io.dmaDstAddr := 48.U  
       pBlockMemory.io.dmaDstOffset := 0.U
-      pBlockMemory.io.dmaSrcLen := 32.U   
+      pBlockMemory.io.dmaSrcLen := 16.U   
       pBlockMemory.io.dmaDstLen := 32.U   
       pBlockMemory.io.mode := 3.U
       when(pBlockMemory.io.dmaValid) {
@@ -649,6 +660,52 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
       pBlockMemory.io.mode := 1.U
       when(pBlockMemory.io.readValid) {
         r_state := 14.U
+        pBlockMemory.io.mode := 0.U
+        printf("%x\n", pBlockMemory.io.readData)
+      }
+    }
+    is(14.U) {
+      pBlockMemory.io.dmaSrcAddr := 52.U  
+      pBlockMemory.io.dmaDstAddr := 82.U  
+      pBlockMemory.io.dmaDstOffset := 0.U
+      pBlockMemory.io.dmaSrcLen := 16.U   
+      pBlockMemory.io.dmaDstLen := 32.U   
+      pBlockMemory.io.mode := 3.U
+      when(pBlockMemory.io.dmaValid) {
+        pBlockMemory.io.mode := 0.U
+        r_state := 15.U
+      }     
+    }
+    is(15.U) {
+      pBlockMemory.io.readAddr := 80.U
+      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readLen := 8.U
+      pBlockMemory.io.mode := 1.U
+      when(pBlockMemory.io.readValid) {
+        r_state := 16.U
+        pBlockMemory.io.mode := 0.U
+        printf("%x\n", pBlockMemory.io.readData)
+      }
+    }
+    is(16.U) {
+      pBlockMemory.io.dmaSrcAddr := 0.U  
+      pBlockMemory.io.dmaDstAddr := 84.U  
+      pBlockMemory.io.dmaDstOffset := 0.U
+      pBlockMemory.io.dmaSrcLen := 0.U   
+      pBlockMemory.io.dmaDstLen := 9.U   
+      pBlockMemory.io.mode := 3.U
+      when(pBlockMemory.io.dmaValid) {
+        pBlockMemory.io.mode := 0.U
+        r_state := 17.U
+      }     
+    }
+    is(17.U) {
+      pBlockMemory.io.readAddr := 80.U
+      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readLen := 8.U
+      pBlockMemory.io.mode := 1.U
+      when(pBlockMemory.io.readValid) {
+        r_state := 18.U
         pBlockMemory.io.mode := 0.U
         printf("%x\n", pBlockMemory.io.readData)
       }
