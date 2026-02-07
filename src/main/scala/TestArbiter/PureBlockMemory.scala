@@ -122,6 +122,7 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   val r_dma_read_data    = RegInit(0.U(C_M_AXI_DATA_WIDTH.W))
   // the write length used in unaligned write
   val r_dma_dst_len      = RegInit(0.U(log2Up(C_M_AXI_DATA_WIDTH / 8 + 1).W))
+  val r_dmaErase_enable  = RegInit(false.B)
 
   // read, write, dma request
   val r_read_req       = RegNext((io.mode === 1.U) || r_dma_req_read, init = false.B)
@@ -266,7 +267,7 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
 
   when(r_write_req & RegNext(r_r_valid)) {
     r_write_running := true.B
-    r_write_data_2  := r_write_data_1 | r_write_data_shift
+    r_write_data_2  := Mux(r_dmaErase_enable, r_write_data_1, r_write_data_1 | r_write_data_shift)
   }
 
   when(r_write_running & ~r_aw_enable) {
@@ -316,7 +317,6 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   val r_dma_req_next     = RegNext(r_dma_req)
   val r_dmaSrc_finish    = RegInit(false.B)
   val r_dmaDst_finish    = RegInit(false.B)
-  val r_dmaErase_enable  = RegInit(false.B)
 
   // data from read port
   io.dmaValid := RegNext(r_dmaDst_finish & RegNext(r_b_valid), init = false.B)
@@ -358,7 +358,6 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   }
 
   // save read data
-//   val r_dma_real_len = RegNext(Mux(r_dmaErase_enable, r_dmaDst_len, r_dmaSrc_len))
   when(r_dma_req & unalignRead_finish) {
     r_dma_read_data  := MuxLookup(r_dmaSrc_len, r_final_buffer,
                                     Seq(
@@ -371,9 +370,12 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
                                         6.U -> r_final_buffer(47,0),
                                         7.U -> r_final_buffer(55,0)
                                     ))
-  } .elsewhen(r_dmaErase_enable & io.M_AXI_RVALID & io.M_AXI_RREADY) {
+  } 
+  /*
+  .elsewhen(r_dmaErase_enable & io.M_AXI_RVALID & io.M_AXI_RREADY) {
     r_dma_read_data := Mux(r_dmaDst_len >= 8.U, 0.U, io.M_AXI_RDATA)
   }
+  */
 
   // write transaction
   val r_write_finish_precond1 = RegInit(false.B)
