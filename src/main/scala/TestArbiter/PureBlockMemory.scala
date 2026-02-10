@@ -325,8 +325,8 @@ class PureBlockMemory(val C_M_AXI_DATA_WIDTH: Int,
   when(r_dma_req & ~r_dma_req_next) {
     r_dmaSrc_addr      := io.dmaSrcAddr
     r_dmaDst_addr      := io.dmaDstAddr + io.dmaDstOffset
-    r_dmaSrc_len       := io.dmaSrcLen
-    r_dmaDst_len       := io.dmaDstLen
+    r_dmaSrc_len       := Mux(io.dmaSrcLen < io.dmaDstLen, io.dmaSrcLen, io.dmaDstLen)
+    r_dmaDst_len       := Mux(io.dmaSrcLen < io.dmaDstLen, io.dmaDstLen, io.dmaSrcLen)
 
     r_dmaErase_enable  := io.dmaSrcLen === 0.U
 
@@ -526,7 +526,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
       pBlockMemory.io.writeAddr := 0.U
       pBlockMemory.io.writeData := "h0807060504030201".U
       pBlockMemory.io.writeLen := 8.U
-      pBlockMemory.io.writeOffset := 0.U
+      pBlockMemory.io.writeOffset := 3.U
       pBlockMemory.io.mode := 2.U
       when(pBlockMemory.io.writeValid) {
         r_state := 2.U
@@ -537,7 +537,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
       pBlockMemory.io.writeAddr := 8.U
       pBlockMemory.io.writeData := "h1817161514131211".U
       pBlockMemory.io.writeLen := 8.U
-      pBlockMemory.io.writeOffset := 0.U
+      pBlockMemory.io.writeOffset := 3.U
       pBlockMemory.io.mode := 2.U
       when(pBlockMemory.io.writeValid) {
         r_state := 3.U
@@ -548,7 +548,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
       pBlockMemory.io.writeAddr := 16.U
       pBlockMemory.io.writeData := "h2827262524232221".U
       pBlockMemory.io.writeLen := 8.U
-      pBlockMemory.io.writeOffset := 0.U
+      pBlockMemory.io.writeOffset := 3.U
       pBlockMemory.io.mode := 2.U
       when(pBlockMemory.io.writeValid) {
         r_state := 4.U
@@ -559,7 +559,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
       pBlockMemory.io.writeAddr := 24.U
       pBlockMemory.io.writeData := "h3837363534333231".U
       pBlockMemory.io.writeLen := 8.U
-      pBlockMemory.io.writeOffset := 0.U
+      pBlockMemory.io.writeOffset := 3.U
       pBlockMemory.io.mode := 2.U
       when(pBlockMemory.io.writeValid) {
         r_state := 5.U
@@ -570,7 +570,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
       pBlockMemory.io.writeAddr := 32.U
       pBlockMemory.io.writeData := "h4847464544434241".U
       pBlockMemory.io.writeLen := 8.U
-      pBlockMemory.io.writeOffset := 0.U
+      pBlockMemory.io.writeOffset := 3.U
       pBlockMemory.io.mode := 2.U
       when(pBlockMemory.io.writeValid) {
         r_state := 6.U
@@ -579,7 +579,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
     }
     is(6.U) {
       pBlockMemory.io.readAddr := 0.U
-      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readOffset := 4.U
       pBlockMemory.io.readLen := 8.U
       pBlockMemory.io.mode := 1.U
       when(pBlockMemory.io.readValid) {
@@ -590,7 +590,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
     }
     is(7.U) {
       pBlockMemory.io.readAddr := 8.U
-      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readOffset := 4.U
       pBlockMemory.io.readLen := 8.U
       pBlockMemory.io.mode := 1.U
       when(pBlockMemory.io.readValid) {
@@ -601,7 +601,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
     }
     is(8.U) {
       pBlockMemory.io.readAddr := 16.U
-      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readOffset := 4.U
       pBlockMemory.io.readLen := 8.U
       pBlockMemory.io.mode := 1.U
       when(pBlockMemory.io.readValid) {
@@ -612,7 +612,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
     }
     is(9.U) {
       pBlockMemory.io.readAddr := 24.U
-      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readOffset := 4.U
       pBlockMemory.io.readLen := 8.U
       pBlockMemory.io.mode := 1.U
       when(pBlockMemory.io.readValid) {
@@ -623,7 +623,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
     }
     is(10.U) {
       pBlockMemory.io.readAddr := 32.U
-      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readOffset := 4.U
       pBlockMemory.io.readLen := 8.U
       pBlockMemory.io.mode := 1.U
       when(pBlockMemory.io.readValid) {
@@ -647,7 +647,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
       pBlockMemory.io.dmaSrcAddr := 0.U  
       pBlockMemory.io.dmaDstAddr := 48.U  
       pBlockMemory.io.dmaDstOffset := 0.U
-      pBlockMemory.io.dmaSrcLen := 16.U   
+      pBlockMemory.io.dmaSrcLen := 32.U   
       pBlockMemory.io.dmaDstLen := 32.U   
       pBlockMemory.io.mode := 3.U
       when(pBlockMemory.io.dmaValid) {
@@ -670,8 +670,8 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
       pBlockMemory.io.dmaSrcAddr := 52.U  
       pBlockMemory.io.dmaDstAddr := 82.U  
       pBlockMemory.io.dmaDstOffset := 0.U
-      pBlockMemory.io.dmaSrcLen := 16.U   
-      pBlockMemory.io.dmaDstLen := 32.U   
+      pBlockMemory.io.dmaSrcLen := 32.U   
+      pBlockMemory.io.dmaDstLen := 14.U   
       pBlockMemory.io.mode := 3.U
       when(pBlockMemory.io.dmaValid) {
         pBlockMemory.io.mode := 0.U
@@ -689,6 +689,29 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
         printf("%x\n", pBlockMemory.io.readData)
       }
     }
+    is(16.U) {
+      pBlockMemory.io.readAddr := 88.U
+      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readLen := 8.U
+      pBlockMemory.io.mode := 1.U
+      when(pBlockMemory.io.readValid) {
+        r_state := 17.U
+        pBlockMemory.io.mode := 0.U
+        printf("%x\n", pBlockMemory.io.readData)
+      }
+    }
+    is(17.U) {
+      pBlockMemory.io.readAddr := 96.U
+      pBlockMemory.io.readOffset := 0.U
+      pBlockMemory.io.readLen := 8.U
+      pBlockMemory.io.mode := 1.U
+      when(pBlockMemory.io.readValid) {
+        r_state := 18.U
+        pBlockMemory.io.mode := 0.U
+        printf("%x\n", pBlockMemory.io.readData)
+      }
+    }
+    /*
     is(16.U) {
       pBlockMemory.io.dmaSrcAddr := 0.U  
       pBlockMemory.io.dmaDstAddr := 84.U  
@@ -712,6 +735,7 @@ class TopPureBlockMemory (val C_M_AXI_DATA_WIDTH: Int,
         printf("%x\n", pBlockMemory.io.readData)
       }
     }
+    */
   }
 
   io.M_AXI_AWID                     := pBlockMemory.io.M_AXI_AWID   
